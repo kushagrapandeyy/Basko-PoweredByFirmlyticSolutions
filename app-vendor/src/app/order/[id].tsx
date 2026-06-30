@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput, Linking, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { API_BASE_URL, CURRENT_STAFF_ID } from '@/constants/api';
@@ -141,9 +141,18 @@ export default function OrderDetailsScreen() {
           <Text style={styles.cardTitle}>Current Status</Text>
           <Text style={styles.statusText}>{order.status.replace(/_/g, ' ')}</Text>
           {order.status === 'OUT_FOR_DELIVERY' && (
-            <TouchableOpacity style={styles.mapPromptBtn} onPress={() => setMapModalVisible(true)}>
-              <Ionicons name="map" size={16} color={ROYAL_BLUE} />
-              <Text style={styles.mapPromptText}>View Delivery Map</Text>
+            <TouchableOpacity style={styles.mapPromptBtn} onPress={() => {
+              const lat = order.deliveryLat || 12.9750;
+              const lng = order.deliveryLng || 77.5950;
+              const label = encodeURIComponent(order.deliveryAddress || 'Delivery Address');
+              const url = Platform.select({
+                ios: `maps:0,0?q=${label}@${lat},${lng}`,
+                android: `geo:0,0?q=${lat},${lng}(${label})`
+              });
+              if(url) Linking.openURL(url);
+            }}>
+              <Ionicons name="navigate" size={16} color={ROYAL_BLUE} />
+              <Text style={styles.mapPromptText}>Open in Maps</Text>
             </TouchableOpacity>
           )}
         </View>

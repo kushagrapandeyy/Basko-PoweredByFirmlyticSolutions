@@ -58,8 +58,8 @@ let OrdersService = class OrdersService {
             });
             totalAmount += (product.sellingPrice * item.quantity);
         }
-        return this.prisma.$transaction(async (tx) => {
-            const order = await tx.order.create({
+        const order = await this.prisma.$transaction(async (tx) => {
+            return tx.order.create({
                 data: {
                     storeId,
                     customerId,
@@ -74,30 +74,11 @@ let OrdersService = class OrdersService {
                     },
                 },
             });
-            for (const item of validatedItems) {
-                await tx.inventory.updateMany({
-                    where: { storeId, productId: item.productId },
-                    data: {
-                        reservedQty: { increment: item.quantity }
-                    }
-                });
-                const inv = await tx.inventory.findFirst({ where: { storeId, productId: item.productId } });
-                if (inv) {
-                    await tx.stockMovement.create({
-                        data: {
-                            storeId,
-                            productId: item.productId,
-                            inventoryId: inv.id,
-                            type: 'ONLINE_ORDER_RESERVED',
-                            quantityChange: -item.quantity,
-                            sourceType: 'ORDER',
-                            sourceId: order.id,
-                        }
-                    });
-                }
-            }
-            return order;
         });
+        for (const item of validatedItems) {
+            await this.inventoryService.reserveStockForOnlineOrder(storeId, item.productId, item.quantity, order.id);
+        }
+        return order;
     }
     async payOrder(orderId) {
         const order = await this.prisma.order.findUnique({ where: { id: orderId } });
@@ -110,44 +91,29 @@ let OrdersService = class OrdersService {
         });
     }
     async pickOrder(orderId, staffId) {
-        return this.prisma.$transaction(async (tx) => {
-            const order = await tx.order.findUnique({
-                where: { id: orderId },
-                include: { items: true },
-            });
-            if (!order || (order.status !== client_1.OrderStatus.PAID && order.status !== client_1.OrderStatus.PICKING)) {
-                throw new common_1.BadRequestException('Order cannot be picked');
-            }
-            const updatedOrder = await tx.order.update({
-                where: { id: orderId },
-                data: { status: client_1.OrderStatus.READY_FOR_PICKUP, staffId },
-            });
-            for (const item of order.items) {
-                await tx.inventory.updateMany({
-                    where: { storeId: order.storeId, productId: item.productId },
-                    data: {
-                        reservedQty: { decrement: item.quantity },
-                        onHandQty: { decrement: item.quantity }
-                    }
-                });
-                const inv = await tx.inventory.findFirst({ where: { storeId: order.storeId, productId: item.productId } });
-                if (inv) {
-                    await tx.stockMovement.create({
-                        data: {
-                            storeId: order.storeId,
-                            productId: item.productId,
-                            inventoryId: inv.id,
-                            type: 'ONLINE_ORDER_PICKED',
-                            quantityChange: -item.quantity,
-                            sourceType: 'ORDER',
-                            sourceId: order.id,
-                            staffId,
-                        }
-                    });
-                }
-            }
-            return updatedOrder;
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
         });
+        if (!order || (order.status !== client_1.OrderStatus.PAID && order.status !== client_1.OrderStatus.PICKING)) {
+            throw new common_1.BadRequestException('Order cannot be picked');
+        }
+        const updatedOrder = await this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: client_1.OrderStatus.READY_FOR_PICKUP, staffId },
+        });
+        for (const item of order.items) {
+            await this.inventoryService.recordMovement({
+                storeId: order.storeId,
+                productId: item.productId,
+                type: 'ONLINE_ORDER_PICKED',
+                quantityChange: item.quantity,
+                sourceType: 'ORDER',
+                sourceId: order.id,
+                staffId,
+            });
+        }
+        return await this.prisma.order.findUnique({ where: { id: orderId } });
     }
     async getStoreOrders(storeId) {
         return this.prisma.order.findMany({

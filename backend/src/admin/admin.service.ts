@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AdminService {
@@ -31,7 +32,7 @@ export class AdminService {
     const store = await this.prisma.store.create({
       data: {
         name: data.name,
-        address: data.address,
+        location: data.address || data.location,
         latitude: parseFloat(data.latitude) || 0,
         longitude: parseFloat(data.longitude) || 0,
         operatingRadiusKm: parseFloat(data.operatingRadiusKm) || 5,
@@ -48,7 +49,7 @@ export class AdminService {
   async getVendors() {
     return this.prisma.user.findMany({
       where: { role: 'STAFF' },
-      include: { vendor: true },
+      include: { store: true },
       orderBy: { createdAt: 'desc' }
     });
   }
@@ -68,19 +69,15 @@ export class AdminService {
       throw new NotFoundException('Assigned store not found');
     }
 
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     const user = await this.prisma.user.create({
       data: {
         email: data.email,
-        password: data.password,
+        password: hashedPassword,
         name: data.name,
         phone: data.phone,
-        role: 'STAFF'
-      }
-    });
-
-    await this.prisma.vendor.create({
-      data: {
-        userId: user.id,
+        role: 'STAFF',
         storeId: store.id
       }
     });

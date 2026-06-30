@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -16,14 +17,18 @@ async function main() {
   console.log(`Created store: ${store.name}`);
 
   // Create an Owner
-  const owner = await prisma.user.create({
-    data: {
-      email: 'owner@freshmart.com',
-      name: 'Store Owner',
+  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  const owner = await prisma.user.upsert({
+    where: { email: 'admin@basko.com' },
+    update: { password: hashedAdminPassword, role: 'OWNER' },
+    create: {
+      email: 'admin@basko.com',
+      password: hashedAdminPassword,
+      name: 'System Admin',
       role: 'OWNER',
-      storeId: store.id,
     },
   });
+  console.log(`Created admin user: ${owner.email}`);
   console.log(`Created user: ${owner.email}`);
 
   // Create some products

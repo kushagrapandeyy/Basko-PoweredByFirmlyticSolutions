@@ -23,6 +23,9 @@ export default function DeliveryTrackingScreen() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
 
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0);
+
   const fetchChatMessages = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/orders/${activeOrderId}/messages`);
@@ -84,6 +87,9 @@ export default function DeliveryTrackingScreen() {
         -1,
         true
       );
+      setTimeout(() => {
+        setRatingModalVisible(true);
+      }, 1500); // Small delay before rating pops up
     }
   }, [order?.status]);
 
@@ -289,6 +295,50 @@ export default function DeliveryTrackingScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Rating Modal */}
+      <Modal visible={ratingModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.ratingIconCircle}>
+              <Ionicons name="star" size={32} color="#f59e0b" />
+            </View>
+            <Text style={styles.modalTitle}>Rate Delivery</Text>
+            <Text style={styles.modalSub}>How was your experience with Vikram?</Text>
+            
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setSelectedRating(star)}>
+                  <Ionicons 
+                    name={star <= selectedRating ? "star" : "star-outline"} 
+                    size={36} 
+                    color={star <= selectedRating ? "#f59e0b" : "#cbd5e1"} 
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => {
+                setRatingModalVisible(false);
+                router.replace('/');
+              }}>
+                <Text style={styles.modalBtnCancelText}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtnConfirm, selectedRating === 0 && { opacity: 0.5 }]} 
+                disabled={selectedRating === 0}
+                onPress={() => {
+                  setRatingModalVisible(false);
+                  router.replace('/');
+                }}
+              >
+                <Text style={styles.modalBtnConfirmText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -375,5 +425,17 @@ const styles = StyleSheet.create({
   msgTime: { fontSize: 10, fontFamily: 'Inter_500Medium', color: '#94a3b8', marginTop: 4, alignSelf: 'flex-end' },
   chatInputArea: { flexDirection: 'row', padding: 15, backgroundColor: WHITE, borderTopWidth: 1, borderTopColor: '#e2e8f0', alignItems: 'center', gap: 10 },
   chatInput: { flex: 1, backgroundColor: '#f1f5f9', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 12, fontSize: 14, fontFamily: 'Inter_400Regular' },
-  chatSendBtn: { backgroundColor: ROYAL_BLUE, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' }
+  chatSendBtn: { backgroundColor: ROYAL_BLUE, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: WHITE, borderRadius: 24, padding: 30, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  ratingIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: '#0f172a', marginBottom: 10, textAlign: 'center' },
+  modalSub: { fontSize: 15, fontFamily: 'Inter_400Regular', color: '#64748b', marginBottom: 25, textAlign: 'center' },
+  starsContainer: { flexDirection: 'row', gap: 10, marginBottom: 30 },
+  modalActions: { flexDirection: 'row', gap: 15, width: '100%' },
+  modalBtnCancel: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center' },
+  modalBtnCancelText: { color: '#64748b', fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  modalBtnConfirm: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: MINT_GREEN, alignItems: 'center' },
+  modalBtnConfirmText: { color: WHITE, fontSize: 16, fontFamily: 'Inter_600SemiBold' },
 });

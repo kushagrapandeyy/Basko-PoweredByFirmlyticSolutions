@@ -42,6 +42,10 @@ export default function CheckoutScreen() {
 
       if (res.ok) {
         const orderData = await res.json();
+        
+        // Mock payment step so the order enters the 'PAID' state for fulfillment
+        await fetch(`${API_BASE_URL}/orders/${orderData.id}/pay`, { method: 'POST' });
+
         clearCart();
         router.replace(`/order-confirmation?orderId=${orderData.id}`);
       } else {

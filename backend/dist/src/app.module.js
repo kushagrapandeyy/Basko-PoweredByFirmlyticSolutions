@@ -17,12 +17,21 @@ const orders_module_1 = require("./orders/orders.module");
 const suppliers_module_1 = require("./suppliers/suppliers.module");
 const prisma_service_1 = require("./prisma.service");
 const admin_module_1 = require("./admin/admin.module");
+const auth_module_1 = require("./auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [inventory_module_1.InventoryModule, products_module_1.ProductsModule, pos_module_1.PosModule, orders_module_1.OrdersModule, suppliers_module_1.SuppliersModule, admin_module_1.AdminModule],
+        imports: [
+            inventory_module_1.InventoryModule,
+            products_module_1.ProductsModule,
+            pos_module_1.PosModule,
+            orders_module_1.OrdersModule,
+            suppliers_module_1.SuppliersModule,
+            admin_module_1.AdminModule,
+            auth_module_1.AuthModule
+        ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, prisma_service_1.PrismaService],
     })

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Users, Activity, Plus, X, Building, ShieldCheck } from 'lucide-react';
+import { Store, Users, Activity, Plus, X, Building, ShieldCheck, LogOut } from 'lucide-react';
+import { useAuth, fetchWithAuth } from './AuthContext';
+import Login from './Login';
 
 const API_BASE = 'http://localhost:3000';
 
-function App() {
+function AdminDashboard() {
+  const { logout, user } = useAuth();
   const [activeTab, setActiveTab] = useState('STORES');
   const [stores, setStores] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
@@ -23,16 +26,15 @@ function App() {
   const fetchData = async () => {
     try {
       if (activeTab === 'STORES') {
-        const res = await fetch(`${API_BASE}/admin/stores`);
+        const res = await fetchWithAuth(`${API_BASE}/admin/stores`);
         setStores(await res.json());
       } else if (activeTab === 'VENDORS') {
-        const res = await fetch(`${API_BASE}/admin/vendors`);
+        const res = await fetchWithAuth(`${API_BASE}/admin/vendors`);
         setVendors(await res.json());
-        // Also fetch stores for the dropdown if needed
-        const sRes = await fetch(`${API_BASE}/admin/stores`);
+        const sRes = await fetchWithAuth(`${API_BASE}/admin/stores`);
         setStores(await sRes.json());
       } else if (activeTab === 'AUDIT') {
-        const res = await fetch(`${API_BASE}/admin/audits`);
+        const res = await fetchWithAuth(`${API_BASE}/admin/audits`);
         setAudits(await res.json());
       }
     } catch(e) {
@@ -43,9 +45,8 @@ function App() {
   const submitStore = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/admin/stores`, {
+      await fetchWithAuth(`${API_BASE}/admin/stores`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(storeForm)
       });
       setShowStoreModal(false);
@@ -59,9 +60,8 @@ function App() {
   const submitVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/admin/vendors`, {
+      await fetchWithAuth(`${API_BASE}/admin/vendors`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(vendorForm)
       });
       setShowVendorModal(false);
@@ -93,6 +93,15 @@ function App() {
             <ShieldCheck size={20} /> Audit Trail
           </button>
         </nav>
+        
+        <div style={{ padding: '20px', marginTop: 'auto' }}>
+          <div style={{ marginBottom: '15px', color: '#64748b', fontSize: '13px' }}>
+            Logged in as:<br/><strong>{user?.name}</strong>
+          </div>
+          <button className="nav-item" style={{color: '#ef4444'}} onClick={logout}>
+            <LogOut size={20} /> Sign Out
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -292,4 +301,12 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Login />;
+  }
+
+  return <AdminDashboard />;
+}

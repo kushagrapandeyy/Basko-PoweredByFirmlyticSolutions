@@ -18,13 +18,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     }>;
     payOrder(orderId: string): Promise<{
         id: string;
@@ -33,13 +33,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     }>;
     pickOrder(orderId: string, staffId: string): Promise<{
         id: string;
@@ -48,14 +48,14 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
-    }>;
+    } | null>;
     getStoreOrders(storeId: string): Promise<({
         items: ({
             product: {
@@ -88,6 +88,7 @@ export declare class OrdersService {
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            password: string | null;
             phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             storeId: string | null;
@@ -99,13 +100,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     })[]>;
     getOrderById(id: string): Promise<{
         items: ({
@@ -139,6 +140,7 @@ export declare class OrdersService {
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            password: string | null;
             phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             storeId: string | null;
@@ -150,13 +152,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     }>;
     startDelivery(orderId: string, staffId: string): Promise<{
         id: string;
@@ -165,13 +167,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     }>;
     completeOrder(orderId: string, staffId: string, otp?: string): Promise<{
         id: string;
@@ -180,13 +182,13 @@ export declare class OrdersService {
         storeId: string;
         staffId: string | null;
         status: import(".prisma/client").$Enums.OrderStatus;
+        customerId: string;
         totalAmount: number;
         deliveryFee: number;
         deliveryAddress: string | null;
         deliveryLat: number | null;
         deliveryLng: number | null;
         requireOtp: boolean;
-        customerId: string;
     }>;
     getOrderMessages(orderId: string): Promise<({
         sender: {
@@ -195,6 +197,7 @@ export declare class OrdersService {
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            password: string | null;
             phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             storeId: string | null;
@@ -213,6 +216,7 @@ export declare class OrdersService {
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            password: string | null;
             phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             storeId: string | null;

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let AdminController = class AdminController {
     adminService;
     constructor(adminService) {
@@ -23,14 +24,14 @@ let AdminController = class AdminController {
     getStores() {
         return this.adminService.getStores();
     }
-    createStore(body, adminId = 'mock-admin') {
-        return this.adminService.createStore(body, adminId);
+    createStore(body, req) {
+        return this.adminService.createStore(body, req.user.id);
     }
     getVendors() {
         return this.adminService.getVendors();
     }
-    createVendor(body, adminId = 'mock-admin') {
-        return this.adminService.createVendor(body, adminId);
+    createVendor(body, req) {
+        return this.adminService.createVendor(body, req.user.id);
     }
     getAudits() {
         return this.adminService.getAudits();
@@ -46,9 +47,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)('stores'),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Headers)('x-admin-id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "createStore", null);
 __decorate([
@@ -60,9 +61,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)('vendors'),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Headers)('x-admin-id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "createVendor", null);
 __decorate([
@@ -73,6 +74,7 @@ __decorate([
 ], AdminController.prototype, "getAudits", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [admin_service_1.AdminService])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map

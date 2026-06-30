@@ -17,7 +17,7 @@ export declare class AdminController {
         bankRoutingNumber: string | null;
         taxId: string | null;
     }[]>;
-    createStore(body: any, adminId?: string): Promise<{
+    createStore(body: any, req: any): Promise<{
         id: string;
         name: string;
         location: string | null;
@@ -32,22 +32,40 @@ export declare class AdminController {
         bankRoutingNumber: string | null;
         taxId: string | null;
     }>;
-    getVendors(): Promise<{
+    getVendors(): Promise<({
+        store: {
+            id: string;
+            name: string;
+            location: string | null;
+            latitude: number | null;
+            longitude: number | null;
+            operatingRadiusKm: number;
+            gstin: string | null;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            bankAccountNumber: string | null;
+            bankRoutingNumber: string | null;
+            taxId: string | null;
+        } | null;
+    } & {
         id: string;
         name: string | null;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        password: string | null;
         phone: string | null;
         role: import(".prisma/client").$Enums.Role;
         storeId: string | null;
-    }[]>;
-    createVendor(body: any, adminId?: string): Promise<{
+    })[]>;
+    createVendor(body: any, req: any): Promise<{
         id: string;
         name: string | null;
         createdAt: Date;
         updatedAt: Date;
         email: string;
+        password: string | null;
         phone: string | null;
         role: import(".prisma/client").$Enums.Role;
         storeId: string | null;
@@ -59,6 +77,7 @@ export declare class AdminController {
             createdAt: Date;
             updatedAt: Date;
             email: string;
+            password: string | null;
             phone: string | null;
             role: import(".prisma/client").$Enums.Role;
             storeId: string | null;
