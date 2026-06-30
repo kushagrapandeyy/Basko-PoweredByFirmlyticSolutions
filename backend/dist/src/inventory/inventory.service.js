@@ -12,13 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let InventoryService = class InventoryService {
     prisma;
-    constructor(prisma) {
+    eventEmitter;
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     async recordMovement(data) {
-        return this.prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             let inventory = await tx.inventory.findFirst({
                 where: {
                     storeId: data.storeId,
@@ -89,8 +92,16 @@ let InventoryService = class InventoryService {
                     blockedQty: { increment: blockedDelta },
                 },
             });
-            return updatedInventory;
+            return { updatedInventory, onHandDelta };
         });
+        if (result.onHandDelta < 0 && result.updatedInventory.onHandQty <= 10) {
+            this.eventEmitter.emit('inventory.low_stock', {
+                storeId: data.storeId,
+                productId: data.productId,
+                onHandQty: result.updatedInventory.onHandQty
+            });
+        }
+        return result.updatedInventory;
     }
     async receiveStock(storeId, productId, qty, staffId, batchNo) {
         return this.recordMovement({
@@ -156,10 +167,23 @@ let InventoryService = class InventoryService {
             take: 100,
         });
     }
+    async handleGrnCompleted(event) {
+        for (const item of event.po.items) {
+            if (item.receivedQuantity > 0) {
+                await this.receiveStock(event.po.storeId, item.productId, item.receivedQuantity, event.staffId, `PO-${event.po.id}`);
+            }
+        }
+    }
 };
 exports.InventoryService = InventoryService;
+__decorate([
+    (0, event_emitter_1.OnEvent)('purchase_order.grn_completed'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InventoryService.prototype, "handleGrnCompleted", null);
 exports.InventoryService = InventoryService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, event_emitter_1.EventEmitter2])
 ], InventoryService);
 //# sourceMappingURL=inventory.service.js.map

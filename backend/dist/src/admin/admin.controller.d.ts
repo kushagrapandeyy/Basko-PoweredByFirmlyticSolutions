@@ -88,7 +88,7 @@ export declare class AdminController {
         action: string;
         entityType: string;
         entityId: string | null;
-        userId: string | null;
         details: string | null;
+        userId: string | null;
     })[]>;
 }

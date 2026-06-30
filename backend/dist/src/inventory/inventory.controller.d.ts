@@ -4,11 +4,10 @@ export declare class InventoryController {
     constructor(inventoryService: InventoryService);
     getProducts(storeId: string): Promise<{
         id: string;
-        name: string;
-        isActive: boolean;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
+        name: string;
         barcode: string | null;
         internalSku: string;
         description: string | null;
@@ -18,6 +17,7 @@ export declare class InventoryController {
         purchaseCost: number | null;
         gstRate: number;
         imageUrl: string | null;
+        isActive: boolean;
     }[]>;
     receiveStock(body: {
         storeId: string;
@@ -27,8 +27,6 @@ export declare class InventoryController {
         batchNo?: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -36,6 +34,8 @@ export declare class InventoryController {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     manualAdjustment(body: {
         storeId: string;
@@ -45,8 +45,6 @@ export declare class InventoryController {
         staffId: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -54,6 +52,8 @@ export declare class InventoryController {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getAvailableStock(productId: string, storeId: string): Promise<{
         available: number;
@@ -71,9 +71,9 @@ export declare class InventoryController {
         } | null;
     } & {
         id: string;
-        createdAt: Date;
         storeId: string;
         productId: string;
+        createdAt: Date;
         inventoryId: string;
         type: import(".prisma/client").$Enums.MovementType;
         quantityChange: number;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { API_BASE_URL, CURRENT_STORE_ID } from '@/constants/api';
 
 const ROYAL_BLUE = '#1D4ED8';
@@ -8,6 +9,7 @@ const WHITE = '#FFFFFF';
 const { width } = Dimensions.get('window');
 
 export default function SuppliersScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'DIRECTORY' | 'MY_SUPPLIERS'>('DIRECTORY');
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [myConnections, setMyConnections] = useState<any[]>([]);
@@ -121,7 +123,7 @@ export default function SuppliersScreen() {
         </View>
         
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtn}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/create-po', params: { supplierId: conn.supplier.id } })}>
             <Ionicons name="document-text-outline" size={18} color={ROYAL_BLUE} />
             <Text style={styles.actionBtnText}>New Order</Text>
           </TouchableOpacity>
@@ -138,6 +140,9 @@ export default function SuppliersScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Supplier Network</Text>
+        <TouchableOpacity style={styles.posBtn} onPress={() => router.push('/po-dashboard')}>
+          <Text style={styles.posBtnText}>View POs</Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.tabContainer}>
@@ -174,8 +179,10 @@ export default function SuppliersScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, paddingTop: 40 },
+  header: { padding: 20, paddingTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, color: '#0f172a', fontFamily: 'PlayfairDisplay_700Bold' },
+  posBtn: { backgroundColor: '#e2e8f0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  posBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#0f172a' },
   tabContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   tab: { flex: 1, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: '#e2e8f0', alignItems: 'center' },
   activeTab: { borderBottomColor: ROYAL_BLUE },

@@ -9,16 +9,22 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { PrismaService } from './prisma.service';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ProcurementModule } from './procurement/procurement.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     InventoryModule, 
     ProductsModule,
     PosModule,
     OrdersModule,
     SuppliersModule,
     AdminModule,
-    AuthModule
+    AuthModule,
+    ProcurementModule,
+    NotificationsModule
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

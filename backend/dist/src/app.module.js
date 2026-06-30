@@ -18,19 +18,25 @@ const suppliers_module_1 = require("./suppliers/suppliers.module");
 const prisma_service_1 = require("./prisma.service");
 const admin_module_1 = require("./admin/admin.module");
 const auth_module_1 = require("./auth/auth.module");
+const event_emitter_1 = require("@nestjs/event-emitter");
+const procurement_module_1 = require("./procurement/procurement.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            event_emitter_1.EventEmitterModule.forRoot(),
             inventory_module_1.InventoryModule,
             products_module_1.ProductsModule,
             pos_module_1.PosModule,
             orders_module_1.OrdersModule,
             suppliers_module_1.SuppliersModule,
             admin_module_1.AdminModule,
-            auth_module_1.AuthModule
+            auth_module_1.AuthModule,
+            procurement_module_1.ProcurementModule,
+            notifications_module_1.NotificationsModule
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, prisma_service_1.PrismaService],

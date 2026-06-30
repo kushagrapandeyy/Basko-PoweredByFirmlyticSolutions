@@ -1,8 +1,10 @@
 import { PrismaService } from '../prisma.service';
 import { MovementType } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 export declare class InventoryService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private eventEmitter;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     recordMovement(data: {
         storeId: string;
         productId: string;
@@ -16,8 +18,6 @@ export declare class InventoryService {
         staffId?: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -25,11 +25,11 @@ export declare class InventoryService {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     receiveStock(storeId: string, productId: string, qty: number, staffId?: string, batchNo?: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -37,11 +37,11 @@ export declare class InventoryService {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     reserveStockForOnlineOrder(storeId: string, productId: string, qty: number, orderId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -49,11 +49,11 @@ export declare class InventoryService {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     processPosSale(storeId: string, productId: string, qty: number, billId: string, staffId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         storeId: string;
         productId: string;
         batchNo: string | null;
@@ -61,6 +61,8 @@ export declare class InventoryService {
         onHandQty: number;
         reservedQty: number;
         blockedQty: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getAvailableStock(storeId: string, productId: string): Promise<{
         available: number;
@@ -70,11 +72,10 @@ export declare class InventoryService {
     }>;
     getProducts(storeId?: string): Promise<{
         id: string;
-        name: string;
-        isActive: boolean;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
+        name: string;
         barcode: string | null;
         internalSku: string;
         description: string | null;
@@ -84,6 +85,7 @@ export declare class InventoryService {
         purchaseCost: number | null;
         gstRate: number;
         imageUrl: string | null;
+        isActive: boolean;
     }[]>;
     getMovementHistory(storeId: string, productId?: string): Promise<({
         product: {
@@ -95,9 +97,9 @@ export declare class InventoryService {
         } | null;
     } & {
         id: string;
-        createdAt: Date;
         storeId: string;
         productId: string;
+        createdAt: Date;
         inventoryId: string;
         type: import(".prisma/client").$Enums.MovementType;
         quantityChange: number;
@@ -106,4 +108,8 @@ export declare class InventoryService {
         reason: string | null;
         staffId: string | null;
     })[]>;
+    handleGrnCompleted(event: {
+        po: any;
+        staffId: string;
+    }): Promise<void>;
 }

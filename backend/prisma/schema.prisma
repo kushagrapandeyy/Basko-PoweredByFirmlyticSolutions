@@ -59,6 +59,8 @@ model Store {
   bankAccountNumber String?
   bankRoutingNumber String?
   taxId             String?
+
+  purchaseOrders    PurchaseOrder[]
 }
 
 model Product {
@@ -80,6 +82,8 @@ model Product {
   movements      StockMovement[]
   posBillItems   PosBillItem[]
   orderItems     OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  supplierProducts SupplierProduct[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -248,6 +252,8 @@ model Supplier {
   updatedAt    DateTime @updatedAt
 
   storeConnections StoreSupplierConnection[]
+  purchaseOrders   PurchaseOrder[]
+  supplierProducts SupplierProduct[]
 }
 
 enum ConnectionStatus {
@@ -288,4 +294,56 @@ model AuditLog {
   user       User?    @relation("UserAudits", fields: [userId], references: [id])
   details    String?
   createdAt  DateTime @default(now())
+}
+
+enum POStatus {
+  CREATED
+  SENT
+  ACCEPTED
+  PARTIALLY_ACCEPTED
+  DELIVERED
+  REJECTED
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(uuid())
+  storeId              String
+  store                Store               @relation(fields: [storeId], references: [id])
+  supplierId           String
+  supplier             Supplier            @relation(fields: [supplierId], references: [id])
+  status               POStatus            @default(CREATED)
+  expectedDeliveryDate DateTime?
+  totalAmount          Float               @default(0)
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  
+  items                PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(uuid())
+  poId             String
+  po               PurchaseOrder @relation(fields: [poId], references: [id])
+  productId        String
+  product          Product       @relation(fields: [productId], references: [id])
+  quantity         Int
+  acceptedQuantity Int           @default(0)
+  receivedQuantity Int           @default(0)
+  purchasePrice    Float
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model SupplierProduct {
+  id         String   @id @default(uuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  price      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([supplierId, productId])
 }

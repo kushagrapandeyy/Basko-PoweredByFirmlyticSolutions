@@ -1,0 +1,36 @@
+import { Controller, Post, Get, Param, Body, Patch } from '@nestjs/common';
+import { PurchaseOrderService } from './purchase-order.service';
+import { GrnService } from '../grn/grn.service';
+
+@Controller('purchase-orders')
+export class PurchaseOrderController {
+  constructor(
+    private poService: PurchaseOrderService,
+    private grnService: GrnService
+  ) {}
+
+  @Post()
+  async createPO(@Body() body: { storeId: string, supplierId: string, expectedDeliveryDate: string, items: any[], notes?: string }) {
+    return this.poService.createPO(body.storeId, body.supplierId, new Date(body.expectedDeliveryDate), body.items, body.notes);
+  }
+
+  @Get('store/:storeId')
+  async getStorePOs(@Param('storeId') storeId: string) {
+    return this.poService.getPOs(storeId);
+  }
+
+  @Get(':id')
+  async getPO(@Param('id') id: string) {
+    return this.poService.getPOById(id);
+  }
+
+  @Patch(':id/accept')
+  async acceptPO(@Param('id') id: string) {
+    return this.poService.acceptPO(id);
+  }
+
+  @Post(':id/grn')
+  async completeGRN(@Param('id') id: string, @Body() body: { staffId: string, receivedItems: { poItemId: string, receivedQuantity: number }[] }) {
+    return this.grnService.receiveGoods(id, body.receivedItems, body.staffId);
+  }
+}

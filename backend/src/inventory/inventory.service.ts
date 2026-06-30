@@ -1,10 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MovementType } from '@prisma/client';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
 
   /**
    * Core function to record a stock movement.
@@ -22,7 +23,7 @@ export class InventoryService {
     reason?: string;
     staffId?: string;
   }) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 1. Find or create the specific inventory record (by product + store + batch)
       let inventory = await tx.inventory.findFirst({
         where: {
@@ -107,8 +108,19 @@ export class InventoryService {
         },
       });
 
-      return updatedInventory;
+      return { updatedInventory, onHandDelta };
     });
+
+    // 5. Emit low stock event if quantity decreased and went below threshold (e.g. 10)
+    if (result.onHandDelta < 0 && result.updatedInventory.onHandQty <= 10) {
+      this.eventEmitter.emit('inventory.low_stock', {
+        storeId: data.storeId,
+        productId: data.productId,
+        onHandQty: result.updatedInventory.onHandQty
+      });
+    }
+
+    return result.updatedInventory;
   }
 
   // --- Convenience Methods ---
@@ -183,5 +195,20 @@ export class InventoryService {
       },
       take: 100,
     });
+  }
+
+  @OnEvent('purchase_order.grn_completed')
+  async handleGrnCompleted(event: { po: any; staffId: string }) {
+    for (const item of event.po.items) {
+      if (item.receivedQuantity > 0) {
+        await this.receiveStock(
+          event.po.storeId,
+          item.productId,
+          item.receivedQuantity,
+          event.staffId,
+          `PO-${event.po.id}`
+        );
+      }
+    }
   }
 }
