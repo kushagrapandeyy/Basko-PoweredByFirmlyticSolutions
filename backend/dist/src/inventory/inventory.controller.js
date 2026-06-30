@@ -21,6 +21,9 @@ let InventoryController = class InventoryController {
     constructor(inventoryService) {
         this.inventoryService = inventoryService;
     }
+    async getProducts(storeId) {
+        return this.inventoryService.getProducts(storeId);
+    }
     receiveStock(body) {
         if (!body.storeId || !body.productId || body.quantity == null) {
             throw new common_1.BadRequestException('storeId, productId, and quantity are required');
@@ -52,6 +55,13 @@ let InventoryController = class InventoryController {
     }
 };
 exports.InventoryController = InventoryController;
+__decorate([
+    (0, common_1.Get)('products'),
+    __param(0, (0, common_1.Query)('storeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], InventoryController.prototype, "getProducts", null);
 __decorate([
     (0, common_1.Post)('receive'),
     __param(0, (0, common_1.Body)()),

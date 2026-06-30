@@ -14,6 +14,16 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const inventory_service_1 = require("../inventory/inventory.service");
 const client_1 = require("@prisma/client");
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
 let OrdersService = class OrdersService {
     prisma;
     inventoryService;
@@ -21,7 +31,16 @@ let OrdersService = class OrdersService {
         this.prisma = prisma;
         this.inventoryService = inventoryService;
     }
-    async createOrder(storeId, customerId, items) {
+    async createOrder(storeId, customerId, items, delivery, requireOtp) {
+        const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+        if (!store)
+            throw new common_1.NotFoundException('Store not found');
+        if (delivery && store.latitude && store.longitude) {
+            const distance = getDistanceFromLatLonInKm(store.latitude, store.longitude, delivery.lat, delivery.lng);
+            if (distance > store.operatingRadiusKm) {
+                throw new common_1.BadRequestException(`Delivery address is ${distance.toFixed(1)}km away. This store only delivers within ${store.operatingRadiusKm}km.`);
+            }
+        }
         let totalAmount = 0;
         const validatedItems = [];
         for (const item of items) {
@@ -46,6 +65,10 @@ let OrdersService = class OrdersService {
                     customerId,
                     status: client_1.OrderStatus.PAYMENT_PENDING,
                     totalAmount,
+                    deliveryAddress: delivery?.address,
+                    deliveryLat: delivery?.lat,
+                    deliveryLng: delivery?.lng,
+                    requireOtp: requireOtp || false,
                     items: {
                         create: validatedItems,
                     },
@@ -129,8 +152,78 @@ let OrdersService = class OrdersService {
     async getStoreOrders(storeId) {
         return this.prisma.order.findMany({
             where: { storeId },
-            include: { items: { include: { product: true } }, customer: true },
-            orderBy: { createdAt: 'desc' },
+            include: {
+                customer: true,
+                items: { include: { product: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+    async getOrderById(id) {
+        const order = await this.prisma.order.findUnique({
+            where: { id },
+            include: {
+                customer: true,
+                items: { include: { product: true } }
+            }
+        });
+        if (!order)
+            throw new common_1.NotFoundException('Order not found');
+        return order;
+    }
+    async startDelivery(orderId, staffId) {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order || order.status !== client_1.OrderStatus.READY_FOR_PICKUP) {
+            throw new common_1.BadRequestException('Order cannot be delivered yet');
+        }
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: client_1.OrderStatus.OUT_FOR_DELIVERY, staffId },
+        });
+    }
+    async completeOrder(orderId, staffId, otp) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { customer: true }
+        });
+        if (!order || order.status !== client_1.OrderStatus.OUT_FOR_DELIVERY) {
+            throw new common_1.BadRequestException('Order cannot be completed yet');
+        }
+        if (order.requireOtp) {
+            if (!otp)
+                throw new common_1.BadRequestException('OTP required for this delivery');
+            const phone = order.customer.phone;
+            if (!phone || phone.length < 4) {
+                throw new common_1.BadRequestException('Customer phone invalid for OTP');
+            }
+            const expectedOtp = phone.slice(-4);
+            if (otp !== expectedOtp) {
+                throw new common_1.BadRequestException('Invalid OTP');
+            }
+        }
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: client_1.OrderStatus.DELIVERED },
+        });
+    }
+    async getOrderMessages(orderId) {
+        return this.prisma.orderMessage.findMany({
+            where: { orderId },
+            include: { sender: true },
+            orderBy: { createdAt: 'asc' },
+        });
+    }
+    async addOrderMessage(orderId, senderId, text) {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order)
+            throw new common_1.NotFoundException('Order not found');
+        return this.prisma.orderMessage.create({
+            data: {
+                orderId,
+                senderId,
+                text
+            },
+            include: { sender: true }
         });
     }
 };

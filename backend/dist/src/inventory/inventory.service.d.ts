@@ -68,6 +68,23 @@ export declare class InventoryService {
         reserved: number;
         blocked: number;
     }>;
+    getProducts(storeId?: string): Promise<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        barcode: string | null;
+        internalSku: string;
+        description: string | null;
+        category: string | null;
+        mrp: number;
+        sellingPrice: number;
+        purchaseCost: number | null;
+        gstRate: number;
+        imageUrl: string | null;
+    }[]>;
     getMovementHistory(storeId: string, productId?: string): Promise<({
         product: {
             name: string;

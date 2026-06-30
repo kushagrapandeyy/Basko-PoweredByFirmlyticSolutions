@@ -1,22 +1,58 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCart } from '../context/CartContext';
 
+import Toast from 'react-native-toast-message';
+import { API_BASE_URL, CURRENT_STORE_ID } from '../constants/api';
+
 const ROYAL_BLUE = '#1D4ED8';
 const WHITE = '#FFFFFF';
+const CURRENT_CUSTOMER_ID = 'de283b71-1972-47b7-996f-6633d0f7b7f5'; // Mock User
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { cartTotal, clearCart } = useCart();
+  const { cart, cartTotal, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CARD' | 'CASH'>('UPI');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [requireOtp, setRequireOtp] = useState(false);
 
-  const handlePayment = () => {
-    // In a real app, this integrates with Razorpay/Stripe
-    setTimeout(() => {
-      clearCart();
-      router.replace('/order-confirmation');
-    }, 1000);
+  const handlePayment = async () => {
+    if (cart.length === 0) return;
+    setIsProcessing(true);
+
+    try {
+      const orderPayload = {
+        storeId: CURRENT_STORE_ID,
+        customerId: CURRENT_CUSTOMER_ID,
+        items: cart.map(item => ({ productId: item.product.id, quantity: item.qty })),
+        delivery: {
+          address: 'Tower A, Flat 402, Sunshine Residences',
+          lat: 12.9750, // slightly away from store
+          lng: 77.5950
+        },
+        requireOtp
+      };
+
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
+
+      if (res.ok) {
+        const orderData = await res.json();
+        clearCart();
+        router.replace(`/order-confirmation?orderId=${orderData.id}`);
+      } else {
+        const err = await res.json();
+        Toast.show({ type: 'error', text1: err.message || 'Checkout failed', text2: 'Please check your delivery address.' });
+      }
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Network Error' });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -43,6 +79,19 @@ export default function CheckoutScreen() {
           multiline
         />
 
+        <Text style={styles.sectionTitle}>Delivery Security</Text>
+        <View style={[styles.card, styles.rowCard]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.addressTitle}>Require Delivery OTP</Text>
+            <Text style={styles.addressSub}>Driver will need the last 4 digits of your phone number.</Text>
+          </View>
+          <Switch 
+            value={requireOtp} 
+            onValueChange={setRequireOtp} 
+            trackColor={{ false: '#d1d5db', true: ROYAL_BLUE }}
+          />
+        </View>
+
         <Text style={styles.sectionTitle}>Payment Method</Text>
         <View style={styles.card}>
           <TouchableOpacity 
@@ -68,8 +117,8 @@ export default function CheckoutScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.payBtn} onPress={handlePayment}>
-          <Text style={styles.payBtnText}>Pay ₹{cartTotal + 20}</Text>
+        <TouchableOpacity style={[styles.payBtn, isProcessing && { opacity: 0.7 }]} onPress={handlePayment} disabled={isProcessing}>
+          <Text style={styles.payBtnText}>{isProcessing ? 'Processing...' : `Pay ₹${cartTotal + 20}`}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -84,6 +133,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 20 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#374151', marginBottom: 10, marginTop: 10 },
   card: { backgroundColor: WHITE, borderRadius: 12, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  rowCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   addressTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#111827', marginBottom: 5 },
   addressSub: { fontSize: 14, fontFamily: 'Inter_400Regular', color: '#6b7280', marginBottom: 2 },
   instructionInput: { backgroundColor: WHITE, borderRadius: 12, padding: 15, fontSize: 14, fontFamily: 'Inter_400Regular', color: '#111827', minHeight: 80, textAlignVertical: 'top', marginBottom: 20 },

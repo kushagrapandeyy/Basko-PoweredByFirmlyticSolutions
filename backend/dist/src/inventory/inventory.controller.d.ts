@@ -2,6 +2,23 @@ import { InventoryService } from './inventory.service';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
+    getProducts(storeId: string): Promise<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        barcode: string | null;
+        internalSku: string;
+        description: string | null;
+        category: string | null;
+        mrp: number;
+        sellingPrice: number;
+        purchaseCost: number | null;
+        gstRate: number;
+        imageUrl: string | null;
+    }[]>;
     receiveStock(body: {
         storeId: string;
         productId: string;

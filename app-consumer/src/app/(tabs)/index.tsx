@@ -1,29 +1,56 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, SafeAreaView, FlatList, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCart } from '../../context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
+
+import { API_BASE_URL, CURRENT_STORE_ID } from '../../constants/api';
 
 const ROYAL_BLUE = '#1D4ED8';
 const WHITE = '#FFFFFF';
 
 const CATEGORIES = ['Offers', 'Dairy & Eggs', 'Bakery', 'Snacks', 'Beverages', 'Cleaning'];
 
-export const MOCK_PRODUCTS = [
-  { id: '1', name: 'Amul Taaza Milk 1L', price: 68, time: '10 MINS', image: 'https://via.placeholder.com/300/e0f2fe/0369a1?text=Milk', description: 'Fresh standardized milk, fortified with Vitamin A & D. Ideal for daily consumption.' },
-  { id: '2', name: 'Britannia Whole Wheat Bread', price: 45, time: '10 MINS', image: 'https://via.placeholder.com/300/fef3c7/b45309?text=Bread', description: '100% whole wheat bread, baked to perfection for a healthy sandwich.' },
-  { id: '3', name: 'Tata Salt 1kg', price: 28, time: '10 MINS', image: 'https://via.placeholder.com/300/f3f4f6/374151?text=Salt', description: 'Vacuum evaporated iodised salt. Essential for a healthy diet.' },
-  { id: '4', name: 'Surf Excel Matic 1kg', price: 215, time: '10 MINS', image: 'https://via.placeholder.com/300/e0e7ff/4338ca?text=Detergent', description: 'Front load liquid detergent for tough stain removal.' },
-  { id: '5', name: 'Maggi 2-Minute Noodles', price: 14, time: '10 MINS', image: 'https://via.placeholder.com/300/fef08a/854d0e?text=Maggi', description: 'The classic 2-minute instant noodles, a favourite snack for all ages.' },
-  { id: '6', name: 'Tropicana Orange Juice', price: 110, time: '10 MINS', image: 'https://via.placeholder.com/300/fed7aa/c2410c?text=Juice', description: '100% juice, no added sugar. A refreshing and healthy start to your day.' },
-];
-
 export default function HomeFeed() {
   const router = useRouter();
-  const { addToCart, cartItemsCount } = useCart();
+  const { cart, addToCart, removeFromCart, cartItemsCount, cartTotal } = useCart();
   
+  const [products, setProducts] = useState<any[]>([]);
+  const [store, setStore] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   // Animation value for the cart badge bounce
   const cartScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Fetch products
+    fetch(`${API_BASE_URL}/inventory/products?storeId=${CURRENT_STORE_ID}`)
+      .then(res => res.json())
+      .then(data => {
+        const mapped = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.sellingPrice,
+          time: '10 MINS',
+          image: p.imageUrl || 'https://via.placeholder.com/300/f3f4f6/374151?text=Product',
+          description: p.description
+        }));
+        setProducts(mapped);
+      })
+      .catch(err => console.error(err));
+
+    // Fetch store details
+    fetch(`${API_BASE_URL}/stores/${CURRENT_STORE_ID}`)
+      .then(res => res.json())
+      .then(data => {
+        setStore(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
@@ -35,26 +62,43 @@ export default function HomeFeed() {
     ]).start();
   };
 
-  const renderProduct = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.productCard} activeOpacity={0.9} onPress={() => router.push(`/product/${item.id}`)}>
-      <Image source={{ uri: item.image }} style={styles.productImage} />
-      <Text style={styles.productTime}>{item.time}</Text>
-      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-      <View style={styles.productFooter}>
-        <Text style={styles.productPrice}>₹{item.price}</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={(e) => { e.stopPropagation(); handleAddToCart(item); }}>
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderProduct = ({ item }: { item: any }) => {
+    const cartItem = cart.find(c => c.product.id === item.id);
+    const qty = cartItem ? cartItem.qty : 0;
+
+    return (
+      <TouchableOpacity style={styles.productCard} activeOpacity={0.9} onPress={() => router.push(`/product/${item.id}`)}>
+        <Image source={{ uri: item.image }} style={styles.productImage} />
+        <Text style={styles.productTime}>{item.time}</Text>
+        <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <View style={styles.productFooter}>
+          <Text style={styles.productPrice}>₹{item.price}</Text>
+          {qty > 0 ? (
+            <View style={styles.qtyControls}>
+              <TouchableOpacity style={styles.qtyBtn} onPress={(e) => { e.stopPropagation(); removeFromCart(item.id); }}>
+                <Text style={styles.qtyBtnText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyText}>{qty}</Text>
+              <TouchableOpacity style={styles.qtyBtn} onPress={(e) => { e.stopPropagation(); handleAddToCart(item); }}>
+                <Text style={styles.qtyBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.addBtn} onPress={(e) => { e.stopPropagation(); handleAddToCart(item); }}>
+              <Text style={styles.addBtnText}>+</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderHeader = () => (
     <View>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.deliveryTo}>Delivery to Tower A</Text>
-          <Text style={styles.deliveryTime}>Arrives in 10-15 min</Text>
+          <Text style={styles.deliveryTo}>Ordering from</Text>
+          <Text style={styles.deliveryTime}>{store ? store.name : 'Local Store'}</Text>
         </View>
         <TouchableOpacity style={styles.cartIconContainer} onPress={() => router.push('/cart')}>
           <Ionicons name="cart-outline" size={28} color="#111827" />
@@ -83,7 +127,7 @@ export default function HomeFeed() {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={MOCK_PRODUCTS}
+        data={products}
         keyExtractor={(item) => item.id}
         numColumns={2}
         ListHeaderComponent={renderHeader}
@@ -98,7 +142,7 @@ export default function HomeFeed() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: WHITE },
-  listContent: { paddingBottom: 120 }, // Extra padding for the floating tab bar
+  listContent: { paddingBottom: 160 }, // Extra padding for the floating tab bar + sticky cart
   topBar: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, alignItems: 'center' },
   deliveryTo: { fontSize: 16, color: ROYAL_BLUE, fontFamily: 'Inter_700Bold' },
   deliveryTime: { fontSize: 13, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_400Regular' },
@@ -121,4 +165,8 @@ const styles = StyleSheet.create({
   productPrice: { fontSize: 16, color: '#111827', fontFamily: 'Inter_700Bold' },
   addBtn: { backgroundColor: '#f3f4f6', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   addBtnText: { color: ROYAL_BLUE, fontSize: 20, marginTop: -2, fontFamily: 'Inter_700Bold' },
+  qtyControls: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 18, paddingHorizontal: 4, height: 36 },
+  qtyBtn: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center', borderRadius: 14, backgroundColor: WHITE },
+  qtyBtnText: { color: ROYAL_BLUE, fontSize: 18, marginTop: -2, fontFamily: 'Inter_700Bold' },
+  qtyText: { marginHorizontal: 8, fontSize: 14, fontFamily: 'Inter_700Bold', color: '#111827' },
 });

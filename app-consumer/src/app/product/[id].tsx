@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, SafeAreaView, FlatList, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
-import { MOCK_PRODUCTS } from '../(tabs)/index';
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { API_BASE_URL, CURRENT_STORE_ID } from '../../constants/api';
 
 const ROYAL_BLUE = '#1D4ED8';
 const WHITE = '#FFFFFF';
@@ -13,8 +13,27 @@ export default function ProductDetailsScreen() {
   const router = useRouter();
   const { addToCart } = useCart();
   
-  const product = MOCK_PRODUCTS.find(p => p.id === id) || MOCK_PRODUCTS[0];
-  const similarItems = MOCK_PRODUCTS.filter(p => p.id !== product.id).slice(0, 4);
+  const [product, setProduct] = useState<any>(null);
+  const [similarItems, setSimilarItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/inventory/products?storeId=${CURRENT_STORE_ID}`)
+      .then(res => res.json())
+      .then(data => {
+        const mapped = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.sellingPrice,
+          time: '10 MINS',
+          image: p.imageUrl || 'https://via.placeholder.com/300/f3f4f6/374151?text=Product',
+          description: p.description
+        }));
+        const current = mapped.find((p: any) => p.id === id) || mapped[0];
+        setProduct(current);
+        setSimilarItems(mapped.filter((p: any) => p.id !== current.id).slice(0, 4));
+      })
+      .catch(console.error);
+  }, [id]);
 
   const cartScale = useRef(new Animated.Value(1)).current;
 
@@ -38,6 +57,8 @@ export default function ProductDetailsScreen() {
       </View>
     </TouchableOpacity>
   );
+
+  if (!product) return <SafeAreaView style={styles.container} />;
 
   return (
     <SafeAreaView style={styles.container}>

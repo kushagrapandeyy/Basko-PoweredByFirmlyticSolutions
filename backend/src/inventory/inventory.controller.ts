@@ -6,6 +6,11 @@ import { MovementType } from '@prisma/client';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @Get('products')
+  async getProducts(@Query('storeId') storeId: string) {
+    return this.inventoryService.getProducts(storeId);
+  }
+
   @Post('receive')
   receiveStock(
     @Body() body: { storeId: string; productId: string; quantity: number; staffId?: string; batchNo?: string }

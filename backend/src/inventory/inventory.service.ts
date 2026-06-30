@@ -164,6 +164,12 @@ export class InventoryService {
     };
   }
 
+  async getProducts(storeId?: string) {
+    return this.prisma.product.findMany({
+      where: storeId ? { storeId } : undefined,
+    });
+  }
+
   async getMovementHistory(storeId: string, productId?: string) {
     return this.prisma.stockMovement.findMany({
       where: {

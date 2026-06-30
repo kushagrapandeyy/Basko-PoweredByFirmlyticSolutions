@@ -12,6 +12,7 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String?
+  phone     String?
   role      Role     @default(CUSTOMER)
   storeId   String?
   store     Store?   @relation(fields: [storeId], references: [id])
@@ -21,6 +22,8 @@ model User {
   posBills       PosBill[]
   customerOrders Order[] @relation("CustomerOrders")
   staffOrders    Order[] @relation("StaffOrders")
+  sentMessages   OrderMessage[] @relation("SentMessages")
+  audits         AuditLog[] @relation("UserAudits")
 }
 
 enum Role {
@@ -36,6 +39,9 @@ model Store {
   id          String   @id @default(uuid())
   name        String
   location    String?
+  latitude    Float?
+  longitude   Float?
+  operatingRadiusKm Float @default(3.0)
   gstin       String?
   isActive    Boolean  @default(true)
   users       User[]
@@ -47,6 +53,11 @@ model Store {
   supplierConnections StoreSupplierConnection[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Onboarding & Payment Details
+  bankAccountNumber String?
+  bankRoutingNumber String?
+  taxId             String?
 }
 
 model Product {
@@ -188,6 +199,7 @@ enum OrderStatus {
   PAID
   PICKING
   READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
 }
@@ -202,10 +214,16 @@ model Order {
   staff       User?         @relation("StaffOrders", fields: [staffId], references: [id])
   status      OrderStatus   @default(PAYMENT_PENDING)
   totalAmount Float         @default(0)
+  deliveryFee Float         @default(0)
+  deliveryAddress String?
+  deliveryLat Float?
+  deliveryLng Float?
+  requireOtp  Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   items       OrderItem[]
+  messages    OrderMessage[]
 }
 
 model OrderItem {
@@ -248,4 +266,25 @@ model StoreSupplierConnection {
   updatedAt  DateTime         @updatedAt
 
   @@unique([storeId, supplierId])
+}
+
+model OrderMessage {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String?
+  userId     String?
+  user       User?    @relation("UserAudits", fields: [userId], references: [id])
+  details    String?
+  createdAt  DateTime @default(now())
 }

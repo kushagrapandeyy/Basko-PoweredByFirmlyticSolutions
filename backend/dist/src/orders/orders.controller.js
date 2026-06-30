@@ -25,11 +25,14 @@ let OrdersController = class OrdersController {
             throw new common_1.BadRequestException('storeId is required');
         return this.ordersService.getStoreOrders(storeId);
     }
+    getOrderById(id) {
+        return this.ordersService.getOrderById(id);
+    }
     createOrder(body) {
         if (!body.storeId || !body.customerId || !body.items || body.items.length === 0) {
             throw new common_1.BadRequestException('Invalid order payload');
         }
-        return this.ordersService.createOrder(body.storeId, body.customerId, body.items);
+        return this.ordersService.createOrder(body.storeId, body.customerId, body.items, body.delivery, body.requireOtp);
     }
     payOrder(id) {
         return this.ordersService.payOrder(id);
@@ -38,6 +41,24 @@ let OrdersController = class OrdersController {
         if (!staffId)
             throw new common_1.BadRequestException('staffId required');
         return this.ordersService.pickOrder(id, staffId);
+    }
+    startDelivery(id, staffId) {
+        if (!staffId)
+            throw new common_1.BadRequestException('staffId required');
+        return this.ordersService.startDelivery(id, staffId);
+    }
+    completeOrder(id, staffId, otp) {
+        if (!staffId)
+            throw new common_1.BadRequestException('staffId required');
+        return this.ordersService.completeOrder(id, staffId, otp);
+    }
+    getOrderMessages(id) {
+        return this.ordersService.getOrderMessages(id);
+    }
+    addOrderMessage(id, senderId, text) {
+        if (!senderId || !text)
+            throw new common_1.BadRequestException('senderId and text required');
+        return this.ordersService.addOrderMessage(id, senderId, text);
     }
 };
 exports.OrdersController = OrdersController;
@@ -48,6 +69,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "getStoreOrders", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getOrderById", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -70,6 +98,39 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "pickOrder", null);
+__decorate([
+    (0, common_1.Patch)(':id/deliver'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('staffId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "startDelivery", null);
+__decorate([
+    (0, common_1.Patch)(':id/complete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('staffId')),
+    __param(2, (0, common_1.Body)('otp')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "completeOrder", null);
+__decorate([
+    (0, common_1.Get)(':id/messages'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getOrderMessages", null);
+__decorate([
+    (0, common_1.Post)(':id/messages'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('senderId')),
+    __param(2, (0, common_1.Body)('text')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "addOrderMessage", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __metadata("design:paramtypes", [orders_service_1.OrdersService])

@@ -7,9 +7,10 @@ import { PosModule } from './pos/pos.module';
 import { OrdersModule } from './orders/orders.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { PrismaService } from './prisma.service';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
-  imports: [InventoryModule, ProductsModule, PosModule, OrdersModule, SuppliersModule],
+  imports: [InventoryModule, ProductsModule, PosModule, OrdersModule, SuppliersModule, AdminModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

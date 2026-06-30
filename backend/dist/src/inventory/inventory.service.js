@@ -137,6 +137,11 @@ let InventoryService = class InventoryService {
             blocked: inventory.blockedQty,
         };
     }
+    async getProducts(storeId) {
+        return this.prisma.product.findMany({
+            where: storeId ? { storeId } : undefined,
+        });
+    }
     async getMovementHistory(storeId, productId) {
         return this.prisma.stockMovement.findMany({
             where: {
