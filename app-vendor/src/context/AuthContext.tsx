@@ -9,7 +9,8 @@ interface AuthState {
   role: Role | null;
   tenantId: string | null;
   phone: string | null;
-  login: (phone: string, role: Role) => Promise<void>;
+  token: string | null;
+  login: (phone: string, role: Role, token: string, tenantId: string) => Promise<void>;
   logout: () => Promise<void>;
   updateRole: (role: Role) => Promise<void>;
 }
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthState>({
   role: null,
   tenantId: null,
   phone: null,
+  token: null,
   login: async () => {},
   logout: async () => {},
   updateRole: async () => {},
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   
   const segments = useSegments();
   const router = useRouter();
@@ -42,10 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadSession = async () => {
       const storedAuth = await AsyncStorage.getItem('vendor_auth');
       if (storedAuth) {
-        const { role, tenantId, phone } = JSON.parse(storedAuth);
+        const { role, tenantId, phone, token } = JSON.parse(storedAuth);
         setRole(role);
         setTenantId(tenantId);
         setPhone(phone);
+        setToken(token);
         setIsAuthenticated(true);
       }
     };
@@ -63,17 +67,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, segments]);
 
-  const login = async (userPhone: string, userRole: Role = 'OWNER') => {
-    const defaultTenant = 'tenant_basko_001';
+  const login = async (userPhone: string, userRole: Role, userToken: string, userTenant: string) => {
     await AsyncStorage.setItem('vendor_auth', JSON.stringify({ 
       role: userRole, 
-      tenantId: defaultTenant, 
-      phone: userPhone 
+      tenantId: userTenant, 
+      phone: userPhone,
+      token: userToken
     }));
     
     setRole(userRole);
-    setTenantId(defaultTenant);
+    setTenantId(userTenant);
     setPhone(userPhone);
+    setToken(userToken);
     setIsAuthenticated(true);
   };
 
@@ -82,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null);
     setTenantId(null);
     setPhone(null);
+    setToken(null);
     setIsAuthenticated(false);
   };
 
@@ -96,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, tenantId, phone, login, logout, updateRole }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, tenantId, phone, token, login, logout, updateRole }}>
       {children}
     </AuthContext.Provider>
   );

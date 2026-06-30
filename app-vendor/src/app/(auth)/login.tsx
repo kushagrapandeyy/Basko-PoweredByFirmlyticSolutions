@@ -7,29 +7,37 @@ const WHITE = '#FFFFFF';
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
-
-  const handleSendOTP = () => {
-    if (phone.length === 10) {
-      setStep('OTP');
-    } else {
-      alert('Enter a valid 10-digit phone number');
-    }
-  };
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (otp === '1234') {
-      // Mock assigning a role based on phone number for testing
-      let assignedRole: Role = 'PICKER';
-      if (phone === '9999999999') assignedRole = 'OWNER';
-      if (phone === '8888888888') assignedRole = 'MANAGER';
-      if (phone === '7777777777') assignedRole = 'PARTNER';
+    if (!identifier || !password) {
+      setError('Please enter your phone/email and password.');
+      return;
+    }
 
-      await login(phone, assignedRole);
-    } else {
-      alert('Invalid OTP. Use 1234');
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`http://100.70.73.205:3000/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: identifier, password })
+      });
+
+      if (!res.ok) {
+        throw new Error('Invalid credentials');
+      }
+
+      const data = await res.json();
+      await login(data.user.phone || data.user.email, data.user.role, data.access_token, data.user.storeId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to login');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,48 +54,28 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.card}>
-            {step === 'PHONE' ? (
-              <>
-                <Text style={styles.label}>Phone Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter 10-digit number"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  value={phone}
-                  onChangeText={setPhone}
-                />
-                <TouchableOpacity style={styles.btn} onPress={handleSendOTP}>
-                  <Text style={styles.btnText}>Send OTP</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.label}>Enter OTP sent to +91 {phone}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter 1234"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  value={otp}
-                  onChangeText={setOtp}
-                />
-                <TouchableOpacity style={styles.btn} onPress={handleLogin}>
-                  <Text style={styles.btnText}>Login Securely</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.backBtn} onPress={() => setStep('PHONE')}>
-                  <Text style={styles.backBtnText}>Change Number</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+            {error ? <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text> : null}
+            <Text style={styles.label}>Phone or Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter phone or email"
+              autoCapitalize="none"
+              value={identifier}
+              onChangeText={setIdentifier}
+            />
+            
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter password"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-          <View style={styles.hints}>
-            <Text style={styles.hintTitle}>Test Accounts:</Text>
-            <Text style={styles.hintText}>9999999999 (Owner)</Text>
-            <Text style={styles.hintText}>8888888888 (Manager)</Text>
-            <Text style={styles.hintText}>7777777777 (Partner)</Text>
-            <Text style={styles.hintText}>Any other (Picker)</Text>
+            <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
+              <Text style={styles.btnText}>{loading ? 'Logging in...' : 'Login Securely'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
