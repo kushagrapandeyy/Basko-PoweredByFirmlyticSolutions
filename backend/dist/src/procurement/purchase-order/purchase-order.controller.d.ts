@@ -13,8 +13,6 @@ export declare class PurchaseOrderController {
     }): Promise<{
         store: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             location: string | null;
             latitude: number | null;
@@ -26,21 +24,23 @@ export declare class PurchaseOrderController {
             operatingHours: string | null;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             bankAccountNumber: string | null;
             bankRoutingNumber: string | null;
             taxId: string | null;
         };
         supplier: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             isActive: boolean;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            address: string | null;
             contactEmail: string | null;
             contactPhone: string | null;
-            address: string | null;
             categories: string | null;
             logoUrl: string | null;
             paymentTerms: string | null;
@@ -50,13 +50,13 @@ export declare class PurchaseOrderController {
         items: ({
             product: {
                 id: string;
-                storeId: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 isActive: boolean;
                 imageUrl: string | null;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                storeId: string;
                 barcode: string | null;
                 internalSku: string;
                 category: string | null;
@@ -70,38 +70,38 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         })[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
     getStorePOs(storeId: string): Promise<({
         supplier: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             isActive: boolean;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            address: string | null;
             contactEmail: string | null;
             contactPhone: string | null;
-            address: string | null;
             categories: string | null;
             logoUrl: string | null;
             paymentTerms: string | null;
@@ -111,13 +111,13 @@ export declare class PurchaseOrderController {
         items: ({
             product: {
                 id: string;
-                storeId: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 isActive: boolean;
                 imageUrl: string | null;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                storeId: string;
                 barcode: string | null;
                 internalSku: string;
                 category: string | null;
@@ -131,31 +131,29 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         })[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     })[]>;
     getPO(id: string): Promise<{
         store: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             location: string | null;
             latitude: number | null;
@@ -167,21 +165,23 @@ export declare class PurchaseOrderController {
             operatingHours: string | null;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             bankAccountNumber: string | null;
             bankRoutingNumber: string | null;
             taxId: string | null;
         };
         supplier: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             isActive: boolean;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            address: string | null;
             contactEmail: string | null;
             contactPhone: string | null;
-            address: string | null;
             categories: string | null;
             logoUrl: string | null;
             paymentTerms: string | null;
@@ -191,13 +191,13 @@ export declare class PurchaseOrderController {
         items: ({
             product: {
                 id: string;
-                storeId: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 isActive: boolean;
                 imageUrl: string | null;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                storeId: string;
                 barcode: string | null;
                 internalSku: string;
                 category: string | null;
@@ -211,31 +211,29 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         })[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
     getPOByShareToken(token: string): Promise<{
         store: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             location: string | null;
             latitude: number | null;
@@ -247,21 +245,23 @@ export declare class PurchaseOrderController {
             operatingHours: string | null;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             bankAccountNumber: string | null;
             bankRoutingNumber: string | null;
             taxId: string | null;
         };
         supplier: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             isActive: boolean;
             rating: number;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            address: string | null;
             contactEmail: string | null;
             contactPhone: string | null;
-            address: string | null;
             categories: string | null;
             logoUrl: string | null;
             paymentTerms: string | null;
@@ -271,13 +271,13 @@ export declare class PurchaseOrderController {
         items: ({
             product: {
                 id: string;
-                storeId: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 isActive: boolean;
                 imageUrl: string | null;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                storeId: string;
                 barcode: string | null;
                 internalSku: string;
                 category: string | null;
@@ -291,25 +291,25 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         })[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
     getPOPdf(id: string): Promise<string>;
     acceptPO(id: string): Promise<{
@@ -317,38 +317,38 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         }[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
     sendPO(id: string): Promise<{
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
     completeGRN(id: string, body: {
         staffId: string;
@@ -361,24 +361,24 @@ export declare class PurchaseOrderController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         }[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
 }

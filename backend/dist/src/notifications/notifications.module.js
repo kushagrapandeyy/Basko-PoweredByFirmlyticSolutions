@@ -9,12 +9,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsModule = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
+const prisma_service_1 = require("../prisma.service");
 let NotificationsModule = class NotificationsModule {
 };
 exports.NotificationsModule = NotificationsModule;
 exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
-        providers: [notifications_service_1.NotificationsService]
+        providers: [notifications_service_1.NotificationsService, prisma_service_1.PrismaService],
+        exports: [notifications_service_1.NotificationsService],
     })
 ], NotificationsModule);
 //# sourceMappingURL=notifications.module.js.map

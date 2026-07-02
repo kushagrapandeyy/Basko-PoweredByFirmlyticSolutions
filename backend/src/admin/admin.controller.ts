@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -22,6 +22,21 @@ export class AdminController {
   @Post('stores')
   createStore(@Body() body: any, @Request() req: any) {
     return this.adminService.createStore(body, req.user.id);
+  }
+
+  @Patch('stores/:id')
+  updateStore(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.adminService.updateStore(id, body, req.user.id);
+  }
+
+  @Delete('stores/:id')
+  archiveStore(@Param('id') id: string, @Request() req: any) {
+    return this.adminService.archiveStore(id, req.user.id);
+  }
+
+  @Post('stores/bulk')
+  bulkCreateStores(@Body() body: { stores: any[] }, @Request() req: any) {
+    return this.adminService.bulkCreateStores(body.stores, req.user.id);
   }
 
   // ─── Vendors ───────────────────────────────────────

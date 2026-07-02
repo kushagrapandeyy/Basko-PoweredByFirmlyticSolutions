@@ -1,9 +1,11 @@
 import { PrismaService } from '../prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 export declare class OrdersService {
     private prisma;
     private inventoryService;
-    constructor(prisma: PrismaService, inventoryService: InventoryService);
+    private eventEmitter;
+    constructor(prisma: PrismaService, inventoryService: InventoryService, eventEmitter: EventEmitter2);
     createOrder(storeId: string, customerId: string, items: {
         productId: string;
         quantity: number;

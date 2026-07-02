@@ -36,4 +36,25 @@ export class ProductsController {
   updatePrice(@Param('id') id: string, @Body() body: { mrp: number; sellingPrice: number }) {
     return this.productsService.updatePrice(id, body.mrp, body.sellingPrice);
   }
+
+  /**
+   * GET /products/enrich/:barcode?storeId=x
+   * 3-tier lookup: local DB → Open Food Facts → unknown.
+   * Use this BEFORE creating a product to auto-fill name/category/image/GST.
+   */
+  @Get('enrich/:barcode')
+  enrichBarcode(@Param('barcode') barcode: string, @Query('storeId') storeId: string) {
+    if (!storeId) return { error: 'storeId is required' };
+    return this.productsService.enrichFromBarcode(barcode, storeId);
+  }
+
+  /**
+   * POST /products/from-barcode
+   * Scan barcode → enrich from OFF → auto-create product in one request.
+   * Body: { storeId, barcode, mrp, sellingPrice, internalSku, purchaseCost? }
+   */
+  @Post('from-barcode')
+  createFromBarcode(@Body() body: any) {
+    return this.productsService.createFromBarcode(body);
+  }
 }

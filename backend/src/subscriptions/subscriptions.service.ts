@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma.service';
-import { SubscriptionFrequency, SubscriptionStatus } from '@prisma/client';
+import { SubscriptionFrequency, SubscriptionStatus, OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(SubscriptionsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async createSubscription(data: {
     customerId: string;
@@ -126,7 +133,15 @@ export class SubscriptionsService {
     return now;
   }
 
-  // Called by a cron/scheduled task to auto-create orders from active subscriptions
+  // ─── Cron: runs every day at 5 AM ───────────────────────────────────────
+  @Cron('0 5 * * *')
+  async runDailySubscriptionCron() {
+    this.logger.log('Running daily subscription processing cron...');
+    const results = await this.processActiveSubscriptions();
+    this.logger.log(`Subscription cron complete: ${results.length} processed`);
+  }
+
+  // ─── Process Due Subscriptions (also called by cron + manual trigger) ────
   async processActiveSubscriptions() {
     const now = new Date();
     const dueSubscriptions = await this.prisma.subscription.findMany({
@@ -134,23 +149,90 @@ export class SubscriptionsService {
         status: SubscriptionStatus.ACTIVE,
         nextDeliveryDate: { lte: now },
       },
-      include: { items: true, customer: { include: { savedAddresses: true } } },
+      include: {
+        items: true,
+        customer: { include: { savedAddresses: true } },
+      },
     });
 
     const results: any[] = [];
     for (const sub of dueSubscriptions) {
       try {
-        // Auto-create order (would call OrdersService in production)
+        // 1. Find default delivery address
+        const defaultAddress = sub.customer.savedAddresses.find((a) => a.isDefault);
+
+        // 2. Create the actual order
+        const orderItems = sub.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: 0, // Will be resolved in order creation
+          gstAtOrder: 0,
+        }));
+
+        const order = await this.prisma.order.create({
+          data: {
+            storeId: sub.storeId,
+            customerId: sub.customerId,
+            status: OrderStatus.PAYMENT_PENDING,
+            totalAmount: 0, // Recalculated below
+            subscriptionId: sub.id,
+            deliveryAddress: defaultAddress?.address,
+            deliveryLat: defaultAddress?.latitude,
+            deliveryLng: defaultAddress?.longitude,
+            items: { create: orderItems },
+          },
+          include: { items: true },
+        });
+
+        // 3. Advance nextDeliveryDate
         const nextDeliveryDate = this.calculateNextDelivery(sub.frequency);
         await this.prisma.subscription.update({
           where: { id: sub.id },
           data: { nextDeliveryDate },
         });
-        results.push({ subscriptionId: sub.id, status: 'processed', nextDeliveryDate });
-      } catch (err) {
+
+        // 4. Fire push notification event
+        this.eventEmitter.emit('subscription.order_created', {
+          customerId: sub.customerId,
+          orderId: order.id,
+          productCount: sub.items.length,
+        });
+
+        results.push({ subscriptionId: sub.id, orderId: order.id, status: 'processed', nextDeliveryDate });
+      } catch (err: any) {
+        this.logger.error(`Failed to process subscription ${sub.id}: ${err.message}`);
         results.push({ subscriptionId: sub.id, status: 'failed', error: err.message });
       }
     }
     return results;
+  }
+
+  // ─── Store-level view (for vendor dashboard) ──────────────────────────────
+  async getStoreSubscriptions(storeId: string) {
+    return this.prisma.subscription.findMany({
+      where: { storeId },
+      include: {
+        items: true,
+        customer: { select: { id: true, name: true, phone: true, avatarUrl: true } },
+      },
+      orderBy: { nextDeliveryDate: 'asc' },
+    });
+  }
+
+  // ─── Count subscriptions due today (store ops planning) ──────────────────
+  async getDueTodayCount(storeId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const count = await this.prisma.subscription.count({
+      where: {
+        storeId,
+        status: SubscriptionStatus.ACTIVE,
+        nextDeliveryDate: { gte: startOfDay, lte: endOfDay },
+      },
+    });
+    return { storeId, dueToday: count, date: startOfDay.toISOString().substring(0, 10) };
   }
 }

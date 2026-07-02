@@ -104,4 +104,71 @@ export declare class ProductsService {
         gstRate: number;
         gstClass: import(".prisma/client").$Enums.GSTClass;
     }>;
+    enrichFromBarcode(barcode: string, storeId: string): Promise<{
+        source: string;
+        id: string;
+        name: string;
+        isActive: boolean;
+        imageUrl: string | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        barcode: string | null;
+        internalSku: string;
+        category: string | null;
+        mrp: number;
+        sellingPrice: number;
+        purchaseCost: number | null;
+        gstRate: number;
+        gstClass: import(".prisma/client").$Enums.GSTClass;
+        brand?: undefined;
+    } | {
+        source: string;
+        barcode: string;
+        name: any;
+        brand: any;
+        category: string;
+        imageUrl: any;
+        mrp: number;
+        sellingPrice: number;
+        gstClass: string;
+        gstRate: number;
+    } | {
+        source: string;
+        barcode: string;
+        name: string;
+        category: string;
+        mrp: number;
+        sellingPrice: number;
+        gstClass: string;
+        gstRate: number;
+        brand?: undefined;
+        imageUrl?: undefined;
+    }>;
+    createFromBarcode(data: {
+        storeId: string;
+        barcode: string;
+        mrp: number;
+        sellingPrice: number;
+        internalSku: string;
+        purchaseCost?: number;
+    }): Promise<{
+        id: string;
+        name: string;
+        isActive: boolean;
+        imageUrl: string | null;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        barcode: string | null;
+        internalSku: string;
+        category: string | null;
+        mrp: number;
+        sellingPrice: number;
+        purchaseCost: number | null;
+        gstRate: number;
+        gstClass: import(".prisma/client").$Enums.GSTClass;
+    }>;
 }

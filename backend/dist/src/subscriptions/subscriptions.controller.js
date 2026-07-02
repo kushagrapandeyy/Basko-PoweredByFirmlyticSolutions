@@ -44,6 +44,17 @@ let SubscriptionsController = class SubscriptionsController {
     processActive() {
         return this.subscriptionsService.processActiveSubscriptions();
     }
+    processNow() {
+        return this.subscriptionsService.processActiveSubscriptions();
+    }
+    getStoreSubscriptions(storeId) {
+        return this.subscriptionsService.getStoreSubscriptions(storeId);
+    }
+    getDueTodayCount(storeId) {
+        if (!storeId)
+            throw new common_1.BadRequestException('storeId is required');
+        return this.subscriptionsService.getDueTodayCount(storeId);
+    }
 };
 exports.SubscriptionsController = SubscriptionsController;
 __decorate([
@@ -102,6 +113,26 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], SubscriptionsController.prototype, "processActive", null);
+__decorate([
+    (0, common_1.Post)('process-now'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SubscriptionsController.prototype, "processNow", null);
+__decorate([
+    (0, common_1.Get)('store/:storeId'),
+    __param(0, (0, common_1.Param)('storeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubscriptionsController.prototype, "getStoreSubscriptions", null);
+__decorate([
+    (0, common_1.Get)('due-today'),
+    __param(0, (0, common_1.Query)('storeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubscriptionsController.prototype, "getDueTodayCount", null);
 exports.SubscriptionsController = SubscriptionsController = __decorate([
     (0, common_1.Controller)('subscriptions'),
     __metadata("design:paramtypes", [subscriptions_service_1.SubscriptionsService])

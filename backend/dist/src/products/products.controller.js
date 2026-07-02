@@ -41,6 +41,14 @@ let ProductsController = class ProductsController {
     updatePrice(id, body) {
         return this.productsService.updatePrice(id, body.mrp, body.sellingPrice);
     }
+    enrichBarcode(barcode, storeId) {
+        if (!storeId)
+            return { error: 'storeId is required' };
+        return this.productsService.enrichFromBarcode(barcode, storeId);
+    }
+    createFromBarcode(body) {
+        return this.productsService.createFromBarcode(body);
+    }
 };
 exports.ProductsController = ProductsController;
 __decorate([
@@ -80,6 +88,21 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "updatePrice", null);
+__decorate([
+    (0, common_1.Get)('enrich/:barcode'),
+    __param(0, (0, common_1.Param)('barcode')),
+    __param(1, (0, common_1.Query)('storeId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "enrichBarcode", null);
+__decorate([
+    (0, common_1.Post)('from-barcode'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "createFromBarcode", null);
 exports.ProductsController = ProductsController = __decorate([
     (0, common_1.Controller)('products'),
     __metadata("design:paramtypes", [products_service_1.ProductsService])

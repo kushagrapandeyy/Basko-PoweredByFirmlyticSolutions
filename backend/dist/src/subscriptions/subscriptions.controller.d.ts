@@ -142,4 +142,36 @@ export declare class SubscriptionsController {
         nextDeliveryDate: Date | null;
     }>;
     processActive(): Promise<any[]>;
+    processNow(): Promise<any[]>;
+    getStoreSubscriptions(storeId: string): Promise<({
+        items: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            quantity: number;
+            subscriptionId: string;
+            productName: string;
+        }[];
+        customer: {
+            id: string;
+            name: string | null;
+            phone: string | null;
+            avatarUrl: string | null;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
+        customerId: string;
+        deliverySlot: string | null;
+        frequency: import(".prisma/client").$Enums.SubscriptionFrequency;
+        nextDeliveryDate: Date | null;
+    })[]>;
+    getDueTodayCount(storeId: string): Promise<{
+        storeId: string;
+        dueToday: number;
+        date: string;
+    }>;
 }

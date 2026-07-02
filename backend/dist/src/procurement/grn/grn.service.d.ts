@@ -12,24 +12,24 @@ export declare class GrnService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            poId: string;
             productId: string;
             quantity: number;
             acceptedQuantity: number;
             receivedQuantity: number;
             purchasePrice: number;
+            poId: string;
         }[];
     } & {
         id: string;
-        shareToken: string | null;
-        storeId: string;
-        supplierId: string;
-        status: import(".prisma/client").$Enums.POStatus;
-        expectedDeliveryDate: Date | null;
-        totalAmount: number;
-        notes: string | null;
-        shareTokenExpiresAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.POStatus;
+        totalAmount: number;
+        supplierId: string;
+        expectedDeliveryDate: Date | null;
+        notes: string | null;
+        shareToken: string | null;
+        shareTokenExpiresAt: Date | null;
     }>;
 }

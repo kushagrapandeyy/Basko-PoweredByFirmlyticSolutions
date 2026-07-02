@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, BadRequestException } from '@nestjs/common';
+
 import { SubscriptionsService } from './subscriptions.service';
 
 @Controller('subscriptions')
@@ -44,5 +45,24 @@ export class SubscriptionsController {
   @Post('process')
   processActive() {
     return this.subscriptionsService.processActiveSubscriptions();
+  }
+
+  // Manual trigger alias — same as process, explicit name for dashboards
+  @Post('process-now')
+  processNow() {
+    return this.subscriptionsService.processActiveSubscriptions();
+  }
+
+  // GET /subscriptions/store/:storeId — all subscriptions for a store (vendor dashboard)
+  @Get('store/:storeId')
+  getStoreSubscriptions(@Param('storeId') storeId: string) {
+    return this.subscriptionsService.getStoreSubscriptions(storeId);
+  }
+
+  // GET /subscriptions/due-today?storeId=x — count of subscriptions firing today
+  @Get('due-today')
+  getDueTodayCount(@Query('storeId') storeId: string) {
+    if (!storeId) throw new BadRequestException('storeId is required');
+    return this.subscriptionsService.getDueTodayCount(storeId);
   }
 }

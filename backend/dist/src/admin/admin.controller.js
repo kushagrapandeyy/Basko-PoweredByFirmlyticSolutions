@@ -30,6 +30,15 @@ let AdminController = class AdminController {
     createStore(body, req) {
         return this.adminService.createStore(body, req.user.id);
     }
+    updateStore(id, body, req) {
+        return this.adminService.updateStore(id, body, req.user.id);
+    }
+    archiveStore(id, req) {
+        return this.adminService.archiveStore(id, req.user.id);
+    }
+    bulkCreateStores(body, req) {
+        return this.adminService.bulkCreateStores(body.stores, req.user.id);
+    }
     getVendors() {
         return this.adminService.getVendors();
     }
@@ -73,6 +82,31 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "createStore", null);
+__decorate([
+    (0, common_1.Patch)('stores/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateStore", null);
+__decorate([
+    (0, common_1.Delete)('stores/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "archiveStore", null);
+__decorate([
+    (0, common_1.Post)('stores/bulk'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "bulkCreateStores", null);
 __decorate([
     (0, common_1.Get)('vendors'),
     __metadata("design:type", Function),

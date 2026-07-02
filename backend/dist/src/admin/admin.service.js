@@ -91,6 +91,56 @@ let AdminService = class AdminService {
         await this.logAudit('STORE_CREATED', 'STORE', store.id, adminId, `Created store ${store.name}`);
         return store;
     }
+    async updateStore(id, data, adminId) {
+        const store = await this.prisma.store.update({
+            where: { id },
+            data: {
+                name: data.name,
+                location: data.address || data.location,
+                latitude: data.latitude ? parseFloat(data.latitude) : undefined,
+                longitude: data.longitude ? parseFloat(data.longitude) : undefined,
+                operatingRadiusKm: data.operatingRadiusKm ? parseFloat(data.operatingRadiusKm) : undefined,
+                bankAccountNumber: data.bankAccountNumber,
+                bankRoutingNumber: data.bankRoutingNumber,
+                taxId: data.taxId,
+                gstin: data.taxId,
+                imageUrl: data.imageUrl,
+                operatingHours: data.operatingHours ? JSON.stringify(data.operatingHours) : undefined,
+                description: data.description,
+            }
+        });
+        await this.logAudit('STORE_UPDATED', 'STORE', store.id, adminId, `Updated store ${store.name}`);
+        return store;
+    }
+    async archiveStore(id, adminId) {
+        const store = await this.prisma.store.update({
+            where: { id },
+            data: { isActive: false }
+        });
+        await this.logAudit('STORE_ARCHIVED', 'STORE', store.id, adminId, `Archived store ${store.name}`);
+        return { success: true };
+    }
+    async bulkCreateStores(storesData, adminId) {
+        const creates = storesData.map(data => ({
+            name: data.name,
+            location: data.address || data.location,
+            latitude: data.latitude ? parseFloat(data.latitude) : 0,
+            longitude: data.longitude ? parseFloat(data.longitude) : 0,
+            operatingRadiusKm: data.operatingRadiusKm ? parseFloat(data.operatingRadiusKm) : 3,
+            bankAccountNumber: data.bankAccountNumber || null,
+            bankRoutingNumber: data.bankRoutingNumber || null,
+            taxId: data.taxId || null,
+            gstin: data.taxId || null,
+            imageUrl: data.imageUrl || null,
+            description: data.description || null,
+        }));
+        const result = await this.prisma.store.createMany({
+            data: creates,
+            skipDuplicates: true,
+        });
+        await this.logAudit('STORE_BULK_CREATED', 'STORE', 'bulk', adminId, `Bulk created ${result.count} stores`);
+        return { count: result.count };
+    }
     async getVendors() {
         return this.prisma.user.findMany({
             where: { role: { in: ['STAFF', 'MANAGER', 'OWNER', 'DELIVERY'] } },

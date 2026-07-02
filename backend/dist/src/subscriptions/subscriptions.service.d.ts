@@ -1,8 +1,11 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma.service';
 import { SubscriptionFrequency } from '@prisma/client';
 export declare class SubscriptionsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private eventEmitter;
+    private readonly logger;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     createSubscription(data: {
         customerId: string;
         storeId: string;
@@ -155,5 +158,37 @@ export declare class SubscriptionsService {
         nextDeliveryDate: Date | null;
     }>;
     private calculateNextDelivery;
+    runDailySubscriptionCron(): Promise<void>;
     processActiveSubscriptions(): Promise<any[]>;
+    getStoreSubscriptions(storeId: string): Promise<({
+        items: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            quantity: number;
+            subscriptionId: string;
+            productName: string;
+        }[];
+        customer: {
+            id: string;
+            name: string | null;
+            phone: string | null;
+            avatarUrl: string | null;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
+        customerId: string;
+        deliverySlot: string | null;
+        frequency: import(".prisma/client").$Enums.SubscriptionFrequency;
+        nextDeliveryDate: Date | null;
+    })[]>;
+    getDueTodayCount(storeId: string): Promise<{
+        storeId: string;
+        dueToday: number;
+        date: string;
+    }>;
 }

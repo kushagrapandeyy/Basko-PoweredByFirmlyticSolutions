@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderStatus } from '@prisma/client';
 
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -19,7 +20,8 @@ function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private inventoryService: InventoryService
+    private inventoryService: InventoryService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async createOrder(
@@ -94,10 +96,13 @@ export class OrdersService {
       throw new BadRequestException('Order not found or not pending payment');
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.PAID },
     });
+
+    this.eventEmitter.emit('order.status_changed', { orderId, status: 'PAID', customerId: order.customerId });
+    return updated;
   }
 
   async pickOrder(orderId: string, staffId: string) {
@@ -128,7 +133,9 @@ export class OrdersService {
       });
     }
 
-    return await this.prisma.order.findUnique({ where: { id: orderId } });
+    const finalOrder = await this.prisma.order.findUnique({ where: { id: orderId } });
+    this.eventEmitter.emit('order.status_changed', { orderId, status: 'READY_FOR_PICKUP', customerId: order.customerId });
+    return finalOrder;
   }
 
   async getStoreOrders(storeId: string) {
@@ -160,10 +167,17 @@ export class OrdersService {
       throw new BadRequestException('Order cannot be delivered yet');
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.OUT_FOR_DELIVERY, staffId },
     });
+
+    // Fire push notification to customer
+    this.eventEmitter.emit('order.out_for_delivery', { customerId: order.customerId, orderId });
+    // Fire WebSocket broadcast to all watchers of this order
+    this.eventEmitter.emit('order.status_changed', { orderId, status: 'OUT_FOR_DELIVERY', customerId: order.customerId });
+
+    return updated;
   }
 
   async completeOrder(orderId: string, staffId: string, otp?: string) {
@@ -189,10 +203,17 @@ export class OrdersService {
       }
     }
 
-    return this.prisma.order.update({
+    const completed = await this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.DELIVERED },
     });
+
+    // Fire push notification to customer
+    this.eventEmitter.emit('order.delivered', { customerId: order.customerId, orderId });
+    // Fire WebSocket broadcast
+    this.eventEmitter.emit('order.status_changed', { orderId, status: 'DELIVERED', customerId: order.customerId });
+
+    return completed;
   }
 
   async getOrderMessages(orderId: string) {

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, TextInput } from 'react-native';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, TextInput, Keyboard } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL, CURRENT_STORE_ID, CURRENT_STAFF_ID } from '@/constants/api';
 
@@ -11,20 +11,34 @@ export default function POSScreen() {
   const [cart, setCart] = useState<any[]>([]);
   const [scanValue, setScanValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hidBuffer, setHidBuffer] = useState('');
+  const [lastScanFlash, setLastScanFlash] = useState(false); // visual feedback
   const { role } = useAuth();
+
+  const lastKeystrokeTime = useRef<number>(0);
+  const hidRef = useRef<TextInput>(null);
+  const HID_BUFFER_TIMEOUT = 200; // ms — scanner types fast, humans type slow
+  const MIN_BARCODE_LENGTH = 8;
   
-  const handlePosScan = async () => {
-    if (!scanValue) return;
+  const lookupAndAddProduct = useCallback(async (barcode: string) => {
+    if (!barcode.trim()) return;
     try {
-      // Lookup product by barcode or SKU
-      const res = await fetch(`${API_BASE_URL}/products/barcode/${scanValue}?storeId=${CURRENT_STORE_ID}`);
+      // Try local DB first, then enrichment fallback
+      const res = await fetch(`${API_BASE_URL}/products/barcode/${barcode.trim()}?storeId=${CURRENT_STORE_ID}`);
       if (!res.ok) {
-        alert('Product not found in catalog');
+        // Try enrichment — auto-create from Open Food Facts if found
+        const enrichRes = await fetch(`${API_BASE_URL}/products/enrich/${barcode.trim()}?storeId=${CURRENT_STORE_ID}`);
+        const enriched = await enrichRes.json();
+        if (enriched.source === 'unknown') {
+          alert(`Barcode ${barcode} not found. Add it via Inventory.`);
+        } else {
+          alert(`New product found: "${enriched.name}". Add it to inventory first, then scan again.`);
+        }
         setScanValue('');
         return;
       }
       const product = await res.json();
-      
+
       setCart(prev => {
         const existing = prev.find(i => i.id === product.id);
         if (existing) {
@@ -32,11 +46,46 @@ export default function POSScreen() {
         }
         return [...prev, { id: product.id, name: product.name, price: product.sellingPrice, qty: 1 }];
       });
+
+      // Flash feedback
+      setLastScanFlash(true);
+      setTimeout(() => setLastScanFlash(false), 300);
       setScanValue('');
-    } catch(err) {
-      alert('Error fetching product');
+    } catch {
+      alert('Network error fetching product');
     }
-  };
+  }, []);
+
+  // Legacy: manual input submit via button or keyboard Enter
+  const handlePosScan = () => lookupAndAddProduct(scanValue);
+
+  // HID Barcode Scanner intercept
+  // Scanner types chars rapidly (< 200ms between each). Humans type slowly.
+  const handleHidInput = useCallback((text: string) => {
+    const now = Date.now();
+    const timeSinceLast = now - lastKeystrokeTime.current;
+    lastKeystrokeTime.current = now;
+
+    if (timeSinceLast > HID_BUFFER_TIMEOUT) {
+      // New scan sequence started
+      setHidBuffer(text);
+    } else {
+      setHidBuffer(prev => {
+        const newBuffer = prev + text.slice(-1); // append last char
+        return newBuffer;
+      });
+    }
+  }, []);
+
+  // When HID buffer settles (scanner pressed Enter / newline)
+  const handleHidSubmit = useCallback(() => {
+    if (hidBuffer.length >= MIN_BARCODE_LENGTH) {
+      lookupAndAddProduct(hidBuffer);
+    }
+    setHidBuffer('');
+    // Re-focus hidden input to catch next scan
+    setTimeout(() => hidRef.current?.focus(), 50);
+  }, [hidBuffer, lookupAndAddProduct]);
 
   const posTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const finalTotal = posTotal * 1.05; // 5% flat GST for demo
@@ -91,7 +140,20 @@ export default function POSScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Point of Sale</Text>
+        {lastScanFlash && <Text style={styles.scanFlash}>✓ Added</Text>}
       </View>
+
+      {/* Hidden HID Scanner Interceptor — always focused, invisible, catches scanner input */}
+      <TextInput
+        ref={hidRef}
+        style={styles.hidInput}
+        value={hidBuffer}
+        onChangeText={handleHidInput}
+        onSubmitEditing={handleHidSubmit}
+        autoFocus={true}
+        blurOnSubmit={false}
+        caretHidden={true}
+      />
 
       <View style={isTablet ? styles.posTablet : styles.posMobile}>
         {/* Cart List */}
@@ -102,6 +164,9 @@ export default function POSScreen() {
               placeholder="Type barcode or scan..." 
               value={scanValue}
               onChangeText={setScanValue}
+              onSubmitEditing={handlePosScan}
+              returnKeyType="search"
+              blurOnSubmit={false}
             />
             <TouchableOpacity style={styles.scanBtn} onPress={handlePosScan}>
               <Text style={styles.scanBtnText}>Add</Text>
@@ -148,8 +213,10 @@ export default function POSScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, paddingTop: 40, backgroundColor: WHITE, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  header: { padding: 20, paddingTop: 40, backgroundColor: WHITE, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 28, color: '#0f172a', fontFamily: 'PlayfairDisplay_700Bold' },
+  scanFlash: { color: '#16a34a', fontFamily: 'Inter_700Bold', fontSize: 16 },
+  hidInput: { position: 'absolute', opacity: 0, width: 1, height: 1, top: -999 }, // invisible but focusable
   posTablet: { flex: 1, flexDirection: 'row' },
   posMobile: { flex: 1, flexDirection: 'column' },
   posLeft: { flex: 2, backgroundColor: WHITE, borderRightWidth: isTablet ? 1 : 0, borderRightColor: '#e2e8f0' },

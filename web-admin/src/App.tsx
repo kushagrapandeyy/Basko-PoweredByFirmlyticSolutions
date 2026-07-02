@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Users, Activity, Plus, X, Building, ShieldCheck, LogOut, LayoutDashboard, Calculator, Receipt, Moon, Sun } from 'lucide-react';
+import { Store, Users, Activity, Plus, X, Building, ShieldCheck, LogOut, LayoutDashboard, Calculator, Receipt, Moon, Sun, TrendingUp, AlertTriangle, Package } from 'lucide-react';
 import { useAuth, fetchWithAuth } from './AuthContext';
 import Login from './Login';
 
@@ -15,13 +15,15 @@ function AdminDashboard() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<{ network: any; health: any; scorecard: any } | null>(null);
   
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
 
   // Forms
-  const [storeForm, setStoreForm] = useState({ name: '', address: '', operatingRadiusKm: '5', bankAccountNumber: '', bankRoutingNumber: '', taxId: '' });
+  const defaultStoreForm = { name: '', address: '', operatingRadiusKm: '3', bankAccountNumber: '', bankRoutingNumber: '', taxId: '', latitude: '', longitude: '', description: '', imageUrl: '', operatingHours: '' };
+  const [storeForm, setStoreForm] = useState<any>(defaultStoreForm);
   const [vendorForm, setVendorForm] = useState({ name: '', email: '', phone: '', password: '', storeId: '' });
   const [supplierForm, setSupplierForm] = useState({ name: '', contactEmail: '', contactPhone: '', paymentTerms: 'Net 30' });
 
@@ -52,6 +54,19 @@ function AdminDashboard() {
       } else if (activeTab === 'AUDIT') {
         const res = await fetchWithAuth(`${API_BASE}/admin/audits`);
         setAudits(await res.json());
+      } else if (activeTab === 'ANALYTICS') {
+        const today = new Date();
+        const from = new Date(today); from.setDate(from.getDate() - 30);
+        const fromStr = from.toISOString().substring(0, 10);
+        const toStr = today.toISOString().substring(0, 10);
+        const [networkRes, healthRes, scorecardRes] = await Promise.all([
+          fetchWithAuth(`${API_BASE}/analytics/network-summary?from=${fromStr}&to=${toStr}`),
+          fetchWithAuth(`${API_BASE}/analytics/inventory-health?storeId=all`).catch(() => ({ json: () => ({ summary: {} }) })),
+          fetchWithAuth(`${API_BASE}/analytics/network-summary?from=${fromStr}&to=${toStr}`),
+        ]);
+        const network = await networkRes.json();
+        const scorecard = await scorecardRes.json();
+        setAnalytics({ network, health: null, scorecard });
       }
     } catch(e) {
       console.error(e);
@@ -61,10 +76,55 @@ function AdminDashboard() {
   const submitStore = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchWithAuth(`${API_BASE}/admin/stores`, { method: 'POST', body: JSON.stringify(storeForm) });
+      if ((storeForm as any).id) {
+        await fetchWithAuth(`${API_BASE}/admin/stores/${(storeForm as any).id}`, { method: 'PATCH', body: JSON.stringify(storeForm) });
+      } else {
+        await fetchWithAuth(`${API_BASE}/admin/stores`, { method: 'POST', body: JSON.stringify(storeForm) });
+      }
+      setShowStoreModal(false);
+      setShowStoreModal(false);
+      setStoreForm(defaultStoreForm);
+      fetchData();
+    } catch(e) { console.error(e); }
+  };
+
+  const archiveStore = async (id: string) => {
+    if (!window.confirm('Are you sure you want to archive this store? It will no longer be active.')) return;
+    try {
+      await fetchWithAuth(`${API_BASE}/admin/stores/${id}`, { method: 'DELETE' });
       setShowStoreModal(false);
       fetchData();
     } catch(e) { console.error(e); }
+  };
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const rows = text.split('\n').map(r => r.split(','));
+    if (rows.length < 2) return alert('CSV must have a header row and data.');
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    const stores = rows.slice(1).filter(r => r.length === headers.length && r[0].trim() !== '').map(row => {
+      const data: any = {};
+      headers.forEach((h, i) => data[h] = row[i]?.trim());
+      return data;
+    });
+    
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/admin/stores/bulk`, {
+        method: 'POST',
+        body: JSON.stringify({ stores })
+      });
+      if (res.ok) {
+        alert(`Successfully imported stores!`);
+        fetchData();
+      } else {
+        alert('Failed to import stores. Check console for details.');
+      }
+    } catch(err) {
+      console.error(err);
+    }
+    e.target.value = '';
   };
 
   const submitVendor = async (e: React.FormEvent) => {
@@ -116,6 +176,9 @@ function AdminDashboard() {
           </button>
           <button className={`nav-item ${activeTab === 'AUDIT' ? 'active' : ''}`} onClick={() => setActiveTab('AUDIT')}>
             <ShieldCheck size={20} /> Audit Trail
+          </button>
+          <button className={`nav-item ${activeTab === 'ANALYTICS' ? 'active' : ''}`} onClick={() => setActiveTab('ANALYTICS')}>
+            <TrendingUp size={20} /> Network Analytics
           </button>
         </nav>
         
@@ -209,9 +272,18 @@ function AdminDashboard() {
           <div>
             <div className="page-header">
               <h2 className="page-title">Stores Directory</h2>
-              <button className="btn btn-primary" onClick={() => setShowStoreModal(true)}>
-                <Plus size={18} /> Add New Store
-              </button>
+              <div style={{display: 'flex', gap: 10}}>
+                <label className="btn" style={{background: 'var(--surface-alt)', color: 'var(--text-primary)', cursor: 'pointer'}}>
+                  <Plus size={18} /> Bulk Upload CSV
+                  <input type="file" accept=".csv" style={{display: 'none'}} onChange={handleCSVUpload} />
+                </label>
+                <button className="btn btn-primary" onClick={() => {
+                  setStoreForm(defaultStoreForm);
+                  setShowStoreModal(true);
+                }}>
+                  <Plus size={18} /> Add New Store
+                </button>
+              </div>
             </div>
             <div className="card">
               <table>
@@ -226,12 +298,19 @@ function AdminDashboard() {
                 </thead>
                 <tbody>
                   {stores.map(store => (
-                    <tr key={store.id}>
+                    <tr key={store.id} style={{cursor: 'pointer'}} onClick={() => {
+                      setStoreForm({ ...store, address: store.location || store.address || '' });
+                      setShowStoreModal(true);
+                    }}>
                       <td><strong>{store.name}</strong></td>
                       <td>{store.address || store.location}</td>
                       <td>{store.operatingRadiusKm} km</td>
                       <td>{store.taxId || 'N/A'}</td>
-                      <td><span className="badge badge-success">Active</span></td>
+                      <td>
+                        {store.isActive 
+                          ? <span className="badge badge-success">Active</span>
+                          : <span className="badge badge-danger">Archived</span>}
+                      </td>
                     </tr>
                   ))}
                   {stores.length === 0 && (
@@ -381,6 +460,97 @@ function AdminDashboard() {
           </div>
         )}
 
+        {/* ANALYTICS VIEW */}
+        {activeTab === 'ANALYTICS' && (
+          <div>
+            <div className="page-header">
+              <h2 className="page-title">Network Analytics</h2>
+              <span style={{color: 'var(--text-muted)', fontSize: 13}}>Last 30 days</span>
+            </div>
+
+            {analytics?.network && (
+              <>
+                {/* Network KPIs */}
+                <div className="stats-grid" style={{marginBottom: 32}}>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{background: 'var(--primary-light)', color: 'var(--primary)'}}><TrendingUp size={28}/></div>
+                    <div className="stat-info">
+                      <h4>Network Revenue</h4>
+                      <div className="value">₹{Number(analytics.network.networkRevenue || 0).toLocaleString('en-IN', {maximumFractionDigits: 0})}</div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{background: 'rgba(16,185,129,0.1)', color: 'var(--success)'}}><Store size={28}/></div>
+                    <div className="stat-info">
+                      <h4>Active Stores</h4>
+                      <div className="value">{analytics.network.storeCount}</div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{background: 'rgba(245,158,11,0.1)', color: 'var(--warning)'}}><Receipt size={28}/></div>
+                    <div className="stat-info">
+                      <h4>Total Transactions</h4>
+                      <div className="value">{(analytics.network.stores || []).reduce((s: number, r: any) => s + (r.pos_transactions || 0) + (r.online_orders || 0), 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{background: 'rgba(139,92,246,0.1)', color: '#8b5cf6'}}><Package size={28}/></div>
+                    <div className="stat-info">
+                      <h4>Avg Revenue / Store</h4>
+                      <div className="value">₹{analytics.network.storeCount > 0 ? Math.round(analytics.network.networkRevenue / analytics.network.storeCount).toLocaleString('en-IN') : 0}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Per-Store Breakdown */}
+                <h3 style={{marginBottom: 16, color: 'var(--text-primary)'}}>Store Revenue Breakdown</h3>
+                <div className="card">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Store</th>
+                        <th>Location</th>
+                        <th>POS Sales</th>
+                        <th>Online Orders</th>
+                        <th>Total Revenue</th>
+                        <th>Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(analytics.network.stores || []).map((store: any) => {
+                        const share = analytics.network.networkRevenue > 0
+                          ? ((store.total_revenue / analytics.network.networkRevenue) * 100).toFixed(1)
+                          : '0.0';
+                        return (
+                          <tr key={store.store_id}>
+                            <td><strong>{store.store_name}</strong></td>
+                            <td style={{color: 'var(--text-muted)', fontSize: 13}}>{store.location || '—'}</td>
+                            <td>₹{Number(store.pos_revenue || 0).toFixed(0)}</td>
+                            <td>₹{Number(store.online_revenue || 0).toFixed(0)}</td>
+                            <td><strong>₹{Number(store.total_revenue || 0).toFixed(0)}</strong></td>
+                            <td>
+                              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                                <div style={{flex: 1, height: 6, background: 'var(--border)', borderRadius: 3}}>
+                                  <div style={{width: `${share}%`, height: '100%', background: 'var(--primary)', borderRadius: 3}} />
+                                </div>
+                                <span style={{fontSize: 12, minWidth: 36}}>{share}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(analytics.network.stores || []).length === 0 && (
+                        <tr><td colSpan={6} style={{textAlign: 'center', color: 'var(--text-muted)', padding: 40}}>No revenue data yet. Start processing orders.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {!analytics && <div style={{textAlign: 'center', padding: 60, color: 'var(--text-muted)'}}>Loading analytics...</div>}
+          </div>
+        )}
+
       </main>
 
       {/* STORE MODAL */}
@@ -388,7 +558,7 @@ function AdminDashboard() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Onboard New Store</h3>
+              <h3>{(storeForm as any).id ? 'Edit Store' : 'Onboard New Store'}</h3>
               <button className="close-btn" onClick={() => setShowStoreModal(false)}><X size={24}/></button>
             </div>
             <div className="modal-body">
@@ -400,6 +570,28 @@ function AdminDashboard() {
                 <div className="form-group">
                   <label>Address</label>
                   <input required className="form-control" value={storeForm.address} onChange={e => setStoreForm({...storeForm, address: e.target.value})} placeholder="Full address" />
+                </div>
+                <div style={{display: 'flex', gap: 10}}>
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Latitude</label>
+                    <input className="form-control" value={storeForm.latitude} onChange={e => setStoreForm({...storeForm, latitude: e.target.value})} placeholder="e.g. 28.6139" />
+                  </div>
+                  <div className="form-group" style={{flex: 1}}>
+                    <label>Longitude</label>
+                    <input className="form-control" value={storeForm.longitude} onChange={e => setStoreForm({...storeForm, longitude: e.target.value})} placeholder="e.g. 77.2090" />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Operating Radius (km)</label>
+                  <input type="number" className="form-control" value={storeForm.operatingRadiusKm} onChange={e => setStoreForm({...storeForm, operatingRadiusKm: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea className="form-control" value={storeForm.description} onChange={e => setStoreForm({...storeForm, description: e.target.value})} placeholder="Store bio or details..."></textarea>
+                </div>
+                <div className="form-group">
+                  <label>Image URL</label>
+                  <input className="form-control" value={storeForm.imageUrl} onChange={e => setStoreForm({...storeForm, imageUrl: e.target.value})} placeholder="https://..." />
                 </div>
                 
                 <h4 style={{marginTop: 30, marginBottom: 15, fontSize: 16}}>Payment Details (Banking)</h4>
@@ -416,9 +608,16 @@ function AdminDashboard() {
                   <input required className="form-control" value={storeForm.taxId} onChange={e => setStoreForm({...storeForm, taxId: e.target.value})} />
                 </div>
 
-                <div style={{marginTop: 30, display: 'flex', justifyContent: 'flex-end', gap: 10}}>
-                  <button type="button" className="btn" style={{background: 'var(--surface-alt)', color: 'var(--text-primary)'}} onClick={() => setShowStoreModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Create Store</button>
+                <div style={{marginTop: 30, display: 'flex', justifyContent: 'space-between', gap: 10}}>
+                  {(storeForm as any).id && (
+                    <button type="button" className="btn" style={{background: 'rgba(239,68,68,0.1)', color: 'var(--danger)'}} onClick={() => archiveStore((storeForm as any).id)}>
+                      Archive Store
+                    </button>
+                  )}
+                  <div style={{display: 'flex', gap: 10, marginLeft: 'auto'}}>
+                    <button type="button" className="btn" style={{background: 'var(--surface-alt)', color: 'var(--text-primary)'}} onClick={() => setShowStoreModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary">{(storeForm as any).id ? 'Save Changes' : 'Create Store'}</button>
+                  </div>
                 </div>
               </form>
             </div>

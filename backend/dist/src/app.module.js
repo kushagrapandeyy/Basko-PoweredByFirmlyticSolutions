@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const schedule_1 = require("@nestjs/schedule");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const inventory_module_1 = require("./inventory/inventory.module");
@@ -23,6 +24,10 @@ const procurement_module_1 = require("./procurement/procurement.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const subscriptions_module_1 = require("./subscriptions/subscriptions.module");
 const gst_module_1 = require("./gst/gst.module");
+const analytics_module_1 = require("./analytics/analytics.module");
+const delivery_module_1 = require("./delivery/delivery.module");
+const platform_module_1 = require("./platform/platform.module");
+const storage_module_1 = require("./storage/storage.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -30,6 +35,7 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             event_emitter_1.EventEmitterModule.forRoot(),
+            schedule_1.ScheduleModule.forRoot(),
             inventory_module_1.InventoryModule,
             products_module_1.ProductsModule,
             pos_module_1.PosModule,
@@ -41,6 +47,10 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             subscriptions_module_1.SubscriptionsModule,
             gst_module_1.GstModule,
+            analytics_module_1.AnalyticsModule,
+            delivery_module_1.DeliveryModule,
+            platform_module_1.PlatformModule,
+            storage_module_1.StorageModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, prisma_service_1.PrismaService],

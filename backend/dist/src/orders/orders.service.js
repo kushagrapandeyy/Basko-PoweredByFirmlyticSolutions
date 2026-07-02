@@ -13,6 +13,7 @@ exports.OrdersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const inventory_service_1 = require("../inventory/inventory.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
 const client_1 = require("@prisma/client");
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
@@ -27,9 +28,11 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 let OrdersService = class OrdersService {
     prisma;
     inventoryService;
-    constructor(prisma, inventoryService) {
+    eventEmitter;
+    constructor(prisma, inventoryService, eventEmitter) {
         this.prisma = prisma;
         this.inventoryService = inventoryService;
+        this.eventEmitter = eventEmitter;
     }
     async createOrder(storeId, customerId, items, delivery, requireOtp) {
         const store = await this.prisma.store.findUnique({ where: { id: storeId } });
@@ -85,10 +88,12 @@ let OrdersService = class OrdersService {
         if (!order || order.status !== client_1.OrderStatus.PAYMENT_PENDING) {
             throw new common_1.BadRequestException('Order not found or not pending payment');
         }
-        return this.prisma.order.update({
+        const updated = await this.prisma.order.update({
             where: { id: orderId },
             data: { status: client_1.OrderStatus.PAID },
         });
+        this.eventEmitter.emit('order.status_changed', { orderId, status: 'PAID', customerId: order.customerId });
+        return updated;
     }
     async pickOrder(orderId, staffId) {
         const order = await this.prisma.order.findUnique({
@@ -113,7 +118,9 @@ let OrdersService = class OrdersService {
                 staffId,
             });
         }
-        return await this.prisma.order.findUnique({ where: { id: orderId } });
+        const finalOrder = await this.prisma.order.findUnique({ where: { id: orderId } });
+        this.eventEmitter.emit('order.status_changed', { orderId, status: 'READY_FOR_PICKUP', customerId: order.customerId });
+        return finalOrder;
     }
     async getStoreOrders(storeId) {
         return this.prisma.order.findMany({
@@ -142,10 +149,13 @@ let OrdersService = class OrdersService {
         if (!order || order.status !== client_1.OrderStatus.READY_FOR_PICKUP) {
             throw new common_1.BadRequestException('Order cannot be delivered yet');
         }
-        return this.prisma.order.update({
+        const updated = await this.prisma.order.update({
             where: { id: orderId },
             data: { status: client_1.OrderStatus.OUT_FOR_DELIVERY, staffId },
         });
+        this.eventEmitter.emit('order.out_for_delivery', { customerId: order.customerId, orderId });
+        this.eventEmitter.emit('order.status_changed', { orderId, status: 'OUT_FOR_DELIVERY', customerId: order.customerId });
+        return updated;
     }
     async completeOrder(orderId, staffId, otp) {
         const order = await this.prisma.order.findUnique({
@@ -167,10 +177,13 @@ let OrdersService = class OrdersService {
                 throw new common_1.BadRequestException('Invalid OTP');
             }
         }
-        return this.prisma.order.update({
+        const completed = await this.prisma.order.update({
             where: { id: orderId },
             data: { status: client_1.OrderStatus.DELIVERED },
         });
+        this.eventEmitter.emit('order.delivered', { customerId: order.customerId, orderId });
+        this.eventEmitter.emit('order.status_changed', { orderId, status: 'DELIVERED', customerId: order.customerId });
+        return completed;
     }
     async getOrderMessages(orderId) {
         return this.prisma.orderMessage.findMany({
@@ -197,6 +210,7 @@ exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        inventory_service_1.InventoryService])
+        inventory_service_1.InventoryService,
+        event_emitter_1.EventEmitter2])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

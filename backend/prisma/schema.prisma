@@ -143,6 +143,9 @@ model Product {
 
   @@index([storeId])
   @@index([category])
+  @@index([barcode])                    // barcode lookup — HID scanner + platform search
+  @@index([storeId, isActive])          // product catalog queries
+  @@index([storeId, category])          // category browsing + analytics
 }
 
 model Inventory {
@@ -165,6 +168,9 @@ model Inventory {
   updatedAt      DateTime @updatedAt
 
   @@unique([storeId, productId, batchNo])
+  @@index([storeId, productId])         // available stock lookups
+  @@index([onHandQty])                  // low stock alerts
+  @@index([expiryDate])                 // expiry queries
 }
 
 model StockMovement {
@@ -183,6 +189,10 @@ model StockMovement {
   staffId        String?
   staff          User?    @relation(fields: [staffId], references: [id])
   createdAt      DateTime @default(now())
+
+  @@index([storeId, createdAt])         // analytics time-series queries
+  @@index([productId, type])            // per-product movement history
+  @@index([sourceId])                   // trace by order/bill ID
 }
 
 enum MovementType {
@@ -227,6 +237,9 @@ model PosBill {
 
   items     PosBillItem[]
   payments  PosPayment[]
+
+  @@index([storeId, status])            // POS revenue queries
+  @@index([storeId, createdAt])         // daily/hourly heatmap analytics
 }
 
 model PosBillItem {
@@ -291,6 +304,10 @@ model Order {
 
   items       OrderItem[]
   messages    OrderMessage[]
+
+  @@index([storeId, status])            // store order management
+  @@index([customerId, createdAt])      // customer order history
+  @@index([status, createdAt])          // platform-wide order monitoring
 }
 
 model OrderItem {
@@ -441,6 +458,9 @@ model PurchaseOrder {
   updatedAt            DateTime            @updatedAt
   
   items                PurchaseOrderItem[]
+
+  @@index([storeId, status])            // PO management dashboard
+  @@index([supplierId, createdAt])      // supplier scorecard
 }
 
 model PurchaseOrderItem {
